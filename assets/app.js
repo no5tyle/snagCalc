@@ -489,7 +489,7 @@ function renderMenuTabs() {
     .map((id) => {
       const m = catalogue.menu[id];
       return `<button role="tab" data-menu="${esc(id)}" aria-selected="${id === settings.menu}">
-        <span class="icon" aria-hidden="true">${esc(m.icon ?? '')}</span><span>${esc(m.tabLabel ?? m.name)}</span></button>`;
+        <span class="icon" aria-hidden="true">${esc(m.icon ?? '')}</span><span class="tab-label">${esc(m.tabLabel ?? m.name)}</span></button>`;
     })
     .join('');
 }

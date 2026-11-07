@@ -2,7 +2,12 @@
 <html lang="en-AU">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f2f2f7">
+  <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#000000">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
   <title>Snag Calc</title>
   <meta name="description" content="Fundraising BBQ shopping list and restock calculator">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌭</text></svg>">
@@ -17,8 +22,6 @@
   </header>
 
   <main class="wrap">
-    <nav id="menu-tabs" class="menu-tabs" role="tablist" aria-label="What you're planning"></nav>
-
     <section class="toolbar card" aria-label="Shared options">
       <label>Shop at
         <select id="store"></select>
@@ -66,6 +69,8 @@
     <p>Prices change over time and between stores, so check them before you shop. Your settings are saved in this browser only.
       <button class="link" data-open-wizard>Check prices step by step</button></p>
   </footer>
+
+  <nav id="menu-tabs" class="menu-tabs glass" role="tablist" aria-label="What you're planning"></nav>
 
   <dialog id="wizard" class="wizard" aria-labelledby="wizard-title"></dialog>
 
