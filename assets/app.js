@@ -230,7 +230,7 @@ function renderPriceTable() {
         <td class="num">${money(p.price)}<span class="sub">${
           p.priceUpdated ? `checked ${esc(p.priceUpdated)}` : '<span class="badge-estimate">estimate</span>'
         }</span></td>
-        <td><span class="input-prefix"><span>$</span><input type="number" min="0" step="0.01" data-price="${esc(p.id)}"
+        <td class="your-price"><span class="input-prefix"><span>$</span><input type="number" min="0" step="0.01" data-price="${esc(p.id)}"
           value="${Number.isFinite(override) ? override : ''}" placeholder="${p.price ?? ''}" aria-label="Your price for ${esc(p.name)} at ${esc(storeName(p.store))}"></span></td>
       </tr>`;
     }
