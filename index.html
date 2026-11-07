@@ -17,55 +17,37 @@
   </header>
 
   <main class="wrap">
+    <nav id="menu-tabs" class="menu-tabs" role="tablist" aria-label="What you're planning"></nav>
+
     <section class="toolbar card" aria-label="Shared options">
       <label>Shop at
         <select id="store"></select>
       </label>
-      <label>Wastage buffer
+      <label id="buffer-label">Wastage buffer (food)
         <span class="input-suffix"><input id="buffer" type="number" min="0" max="100" step="1" inputmode="numeric"><span>%</span></span>
-      </label>
-      <label>Sale price per serve
-        <span class="input-prefix"><span>$</span><input id="sale-price" type="number" min="0" step="0.5" inputmode="decimal"></span>
       </label>
     </section>
 
-    <nav class="tabs" role="tablist">
+    <nav class="tabs" role="tablist" aria-label="View">
       <button role="tab" id="tab-plan" aria-controls="panel-plan" aria-selected="true">Plan</button>
       <button role="tab" id="tab-restock" aria-controls="panel-restock" aria-selected="false">Restock</button>
       <button role="tab" id="tab-settings" aria-controls="panel-settings" aria-selected="false">Recipe &amp; prices</button>
     </nav>
 
     <section id="panel-plan" role="tabpanel" aria-labelledby="tab-plan">
-      <div class="card">
-        <label class="big-input">How many sausages do you want to sell?
-          <input id="plan-serves" type="number" min="0" step="10" inputmode="numeric">
-        </label>
-      </div>
+      <div class="card" id="plan-inputs"></div>
       <div id="plan-results"></div>
     </section>
 
     <section id="panel-restock" role="tabpanel" aria-labelledby="tab-restock" hidden>
-      <div class="card">
-        <p class="hint">At the end of day 1, count what's left and enter it below. Snag Calc works out what to buy for the rest of the event.</p>
-        <div class="grid-2">
-          <label>Total sausages wanted (whole event)
-            <input id="restock-total" type="number" min="0" step="10" inputmode="numeric">
-          </label>
-          <label>Sausages sold on day 1
-            <input id="restock-sold" type="number" min="0" step="1" inputmode="numeric">
-          </label>
-        </div>
-        <p id="restock-summary" class="summary"></p>
-        <h3>Stock left over</h3>
-        <div id="stock-inputs" class="stock-grid"></div>
-      </div>
+      <div class="card" id="restock-inputs"></div>
       <div id="restock-results"></div>
     </section>
 
     <section id="panel-settings" role="tabpanel" aria-labelledby="tab-settings" hidden>
       <div class="card">
-        <h2>Recipe (per sausage)</h2>
-        <p class="hint">Untick the items you don't need, or change how much each sausage uses.</p>
+        <h2 id="recipe-title">Recipe</h2>
+        <p class="hint" id="recipe-hint"></p>
         <div class="table-scroll"><table id="recipe-table" class="data stack"></table></div>
       </div>
       <div class="card">

@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { cheapestPacks, calculate, calculateRestock } from '../assets/calc.js';
+import { cheapestPacks, calculate, calculateRestock, calculateItems } from '../assets/calc.js';
 
 const catalogue = JSON.parse(readFileSync(new URL('../data/catalogue.json', import.meta.url)));
 
@@ -118,4 +118,44 @@ test('restock never goes negative when sales exceed target', () => {
   const r = calculateRestock({ catalogue, menuId: 'sausage-sizzle', totalDesired: 100, sold: 150 });
   assert.equal(r.remainingServes, 0);
   assert.equal(r.totalCost, 0);
+});
+
+test('items: drinks use their own quantities and sale prices', () => {
+  const r = calculateItems({ catalogue, menuId: 'drinks', store: 'cheapest', itemOverrides: { pepsi: { quantity: 30, salePrice: 2.5 } } });
+  const pepsi = r.lines.find((l) => l.id === 'pepsi');
+  assert.equal(pepsi.needed, 30);
+  assert.equal(pepsi.purchase.units, 48); // two 24 packs
+  assert.equal(pepsi.purchase.cost, 46);
+  const others = r.lines.filter((l) => l.id !== 'pepsi').reduce((s, l) => s + l.needed * l.salePrice, 0);
+  assert.equal(r.revenue, 30 * 2.5 + others);
+});
+
+test('items: restock subtracts sold/used and stock left over', () => {
+  const r = calculateItems({ catalogue, menuId: 'consumables', sold: { napkins: 400 }, stock: { napkins: 300 } });
+  const n = r.lines.find((l) => l.id === 'napkins');
+  assert.equal(n.needed, 600);
+  assert.equal(n.shortfall, 300);
+  assert.equal(n.purchase.units, 300);
+});
+
+test('items: disabled items are left out', () => {
+  const r = calculateItems({ catalogue, menuId: 'consumables', itemOverrides: { gloves: { enabled: false } } });
+  assert.ok(!r.lines.some((l) => l.id === 'gloves'));
+});
+
+test('egg and bacon: 2 slices of bread and 2 rashers per sandwich', () => {
+  const r = calculate({ catalogue, menuId: 'egg-bacon', serves: 50, store: 'cheapest' });
+  assert.equal(r.lines.find((l) => l.id === 'bread').needed, 100);
+  assert.equal(r.lines.find((l) => l.id === 'bacon').needed, 100);
+  assert.equal(r.lines.find((l) => l.id === 'eggs').needed, 50);
+});
+
+test('every menu references known ingredients with products', () => {
+  for (const [id, menu] of Object.entries(catalogue.menu)) {
+    for (const r of menu.recipe) {
+      const ing = catalogue.ingredients[r.ingredient];
+      assert.ok(ing, `${id}: ${r.ingredient} exists`);
+      assert.ok(ing.products.length, `${id}: ${r.ingredient} has products`);
+    }
+  }
 });

@@ -32,6 +32,7 @@
 }
 
 * { box-sizing: border-box; }
+[hidden] { display: none !important; }
 
 body {
   margin: 0;
@@ -84,6 +85,37 @@ input:focus-visible, select:focus-visible, button:focus-visible {
 .stock-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
 .stock-grid label { font-weight: 500; }
 
+.menu-tabs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 16px; }
+.menu-tabs button {
+  font: inherit;
+  font-weight: 600;
+  font-size: .85rem;
+  line-height: 1.2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 2px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+  min-width: 0;
+  text-align: center;
+}
+@media (max-width: 420px) { .menu-tabs button { font-size: .78rem; letter-spacing: -.01em; } }
+@media (max-width: 370px) { .menu-tabs { grid-template-columns: repeat(2, 1fr); } }
+.menu-tabs .icon { font-size: 1.5rem; line-height: 1; }
+.menu-tabs button[aria-selected=true] { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
+
+.item-grid { display: grid; gap: 12px; }
+.item-row { display: grid; grid-template-columns: minmax(140px, 1.2fr) repeat(2, minmax(120px, 1fr)); gap: 8px 12px; align-items: end; padding-bottom: 12px; border-bottom: 1px solid var(--border); }
+.item-row:last-child { border-bottom: none; padding-bottom: 0; }
+.item-name { font-weight: 700; align-self: center; }
+.item-row label { font-weight: 500; font-size: .9rem; }
+.hint.small { font-size: .85rem; margin: 10px 0 0; }
+
 .tabs { display: flex; gap: 4px; margin-bottom: 16px; overflow-x: auto; }
 .tabs button {
   font: inherit;
@@ -133,9 +165,14 @@ table.data input[type=number] { max-width: 110px; padding: 4px 6px; }
 .site-footer { color: var(--muted); font-size: .85rem; padding-bottom: 32px; }
 
 @media print {
-  .site-header, .toolbar, .tabs, .actions, .site-footer, #panel-settings, .stock-grid, .hint { display: none !important; }
+  .site-header, .toolbar, .tabs, .menu-tabs, .hint.small, .actions, .site-footer, #panel-settings, .stock-grid, .hint { display: none !important; }
   body { background: #fff; color: #000; }
   .card { border: none; padding: 0; }
+}
+
+@media (max-width: 640px) {
+  .item-row { grid-template-columns: 1fr 1fr; }
+  .item-name { grid-column: 1 / -1; }
 }
 
 /* Results become stacked cards on phones so nothing is clipped */

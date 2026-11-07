@@ -165,13 +165,75 @@ export function calculate({
       const shortfall = roundQty(Math.max(0, needed - onHand));
       const products = pricedProducts(ingredient.products, priceOverrides);
       const purchase = purchaseFor(shortfall, products, store, storeIds);
-      return { id: r.ingredient, ingredient, perServe: r.perServe, needed, onHand, shortfall, purchase };
+      return { id: r.ingredient, ingredient, perServe: r.perServe, needed, onHand, shortfall, products, purchase };
     });
 
+  return { serves: servesClean, lines, ...totals(lines) };
+}
+
+function totals(lines) {
   const knownCosts = lines.map((l) => l.purchase.cost).filter((c) => c != null);
   const totalCost = round2(knownCosts.reduce((s, c) => s + c, 0));
   const incomplete = lines.some((l) => l.purchase.cost == null && l.shortfall > 0);
-  return { serves: servesClean, lines, totalCost, incomplete };
+  return { totalCost, incomplete };
+}
+
+/**
+ * Resolve the item list for a quantity-based menu (drinks, consumables),
+ * applying user overrides.
+ * overrides: { [ingredientId]: { quantity?: number, salePrice?: number, enabled?: boolean } }
+ */
+export function effectiveItems(catalogue, menuId, overrides = {}) {
+  const menu = catalogue.menu[menuId];
+  if (!menu) throw new Error(`Unknown menu item: ${menuId}`);
+  return menu.recipe.map((r) => {
+    const o = overrides[r.ingredient] || {};
+    return {
+      ...r,
+      quantity: Number.isFinite(o.quantity) ? o.quantity : r.quantity ?? 0,
+      salePrice: Number.isFinite(o.salePrice) ? o.salePrice : r.salePrice ?? 0,
+      enabled: typeof o.enabled === 'boolean' ? o.enabled : r.enabled !== false,
+    };
+  });
+}
+
+/**
+ * Quantity-based calculation: each line has its own planned quantity rather
+ * than being scaled from a number of serves. No wastage buffer is applied.
+ *
+ * For a restock, pass `sold` (sold or used so far) and `stock` (left over),
+ * both { [ingredientId]: number } in base units. Each line then needs
+ * planned - sold, and buys whatever stock doesn't cover.
+ *
+ * Revenue is quantity × salePrice for lines still to sell.
+ */
+export function calculateItems({
+  catalogue,
+  menuId,
+  store = 'cheapest',
+  itemOverrides = {},
+  priceOverrides = {},
+  sold = {},
+  stock = {},
+}) {
+  const storeIds = Object.keys(catalogue.stores);
+  const lines = effectiveItems(catalogue, menuId, itemOverrides)
+    .filter((r) => r.enabled)
+    .map((r) => {
+      const ingredient = catalogue.ingredients[r.ingredient];
+      if (!ingredient) throw new Error(`Unknown ingredient: ${r.ingredient}`);
+      const planned = Math.max(0, Number(r.quantity) || 0);
+      const soldQty = Math.max(0, Number(sold[r.ingredient]) || 0);
+      const needed = roundQty(Math.max(0, planned - soldQty));
+      const onHand = Math.max(0, Number(stock[r.ingredient]) || 0);
+      const shortfall = roundQty(Math.max(0, needed - onHand));
+      const products = pricedProducts(ingredient.products, priceOverrides);
+      const purchase = purchaseFor(shortfall, products, store, storeIds);
+      const salePrice = Math.max(0, Number(r.salePrice) || 0);
+      return { id: r.ingredient, ingredient, planned, sold: soldQty, needed, onHand, shortfall, salePrice, products, purchase };
+    });
+  const revenue = round2(lines.reduce((s, l) => s + l.needed * l.salePrice, 0));
+  return { lines, revenue, ...totals(lines) };
 }
 
 /**

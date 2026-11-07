@@ -77,6 +77,78 @@
         { "id": "ww-gloves-100", "store": "woolworths", "name": "Disposable gloves 100 pack", "packSize": 100, "packLabel": "100 pack", "price": 6.00, "stockcode": null, "url": null, "priceUpdated": null },
         { "id": "dk-gloves-100", "store": "drakes", "name": "Disposable gloves 100 pack", "packSize": 100, "packLabel": "100 pack", "price": 6.50, "url": null, "priceUpdated": null }
       ]
+    },
+    "eggs": {
+      "name": "Eggs",
+      "unit": "eggs",
+      "stockUnit": { "label": "dozen", "size": 12 },
+      "products": [
+        { "id": "ww-eggs-12", "store": "woolworths", "name": "Cage-free eggs 12 pack 700g", "packSize": 12, "packLabel": "dozen", "price": 6.50, "stockcode": null, "url": null, "priceUpdated": null }
+      ]
+    },
+    "bacon": {
+      "name": "Bacon",
+      "unit": "rashers",
+      "stockUnit": { "label": "rashers", "size": 1 },
+      "products": [
+        { "id": "ww-bacon-1kg", "store": "woolworths", "name": "Middle bacon rashers 1kg", "packSize": 20, "packLabel": "1kg (~20 rashers)", "price": 14.00, "stockcode": null, "url": null, "priceUpdated": null }
+      ]
+    },
+    "paper-towels": {
+      "name": "Paper towels",
+      "unit": "rolls",
+      "stockUnit": { "label": "rolls", "size": 1 },
+      "products": [
+        { "id": "ww-paper-towels-3", "store": "woolworths", "name": "Paper towels 3 pack", "packSize": 3, "packLabel": "3 rolls", "price": 2.50, "stockcode": null, "url": null, "priceUpdated": "2026-11-07" }
+      ]
+    },
+    "garbage-bags": {
+      "name": "Garbage bags",
+      "unit": "bags",
+      "stockUnit": { "label": "bags", "size": 1 },
+      "products": [
+        { "id": "ww-garbage-bags-56l-20", "store": "woolworths", "name": "Garbage bags 56L 20 pack", "packSize": 20, "packLabel": "20 bags", "price": 3.80, "stockcode": null, "url": null, "priceUpdated": "2026-11-07" }
+      ]
+    },
+    "dish-liquid": {
+      "name": "Dishwashing liquid",
+      "unit": "bottles",
+      "stockUnit": { "label": "bottles", "size": 1 },
+      "products": [
+        { "id": "ww-dish-liquid", "store": "woolworths", "name": "Dishwashing liquid", "packSize": 1, "packLabel": "bottle", "price": 3.00, "stockcode": null, "url": null, "priceUpdated": "2026-11-07" }
+      ]
+    },
+    "pepsi": {
+      "name": "Pepsi",
+      "unit": "cans",
+      "stockUnit": { "label": "cans", "size": 1 },
+      "products": [
+        { "id": "ww-pepsi-24", "store": "woolworths", "name": "Pepsi 24 pack", "packSize": 24, "packLabel": "24 cans", "price": 23.00, "stockcode": null, "url": null, "priceUpdated": "2026-11-07" }
+      ]
+    },
+    "pepsi-max": {
+      "name": "Pepsi Max",
+      "unit": "cans",
+      "stockUnit": { "label": "cans", "size": 1 },
+      "products": [
+        { "id": "ww-pepsi-max-24", "store": "woolworths", "name": "Pepsi Max 24 pack", "packSize": 24, "packLabel": "24 cans", "price": 23.00, "stockcode": null, "url": null, "priceUpdated": "2026-11-07" }
+      ]
+    },
+    "solo": {
+      "name": "Solo",
+      "unit": "cans",
+      "stockUnit": { "label": "cans", "size": 1 },
+      "products": [
+        { "id": "ww-solo-30", "store": "woolworths", "name": "Solo 30 pack", "packSize": 30, "packLabel": "30 cans", "price": 26.00, "stockcode": null, "url": null, "priceUpdated": "2026-11-07" }
+      ]
+    },
+    "water": {
+      "name": "Water",
+      "unit": "bottles",
+      "stockUnit": { "label": "bottles", "size": 1 },
+      "products": [
+        { "id": "ww-water-24", "store": "woolworths", "name": "Water 24 pack", "packSize": 24, "packLabel": "24 bottles", "price": 9.40, "stockcode": null, "url": null, "priceUpdated": "2026-11-07" }
+      ]
     }
   },
   "menu": {
@@ -91,9 +163,55 @@
         { "ingredient": "tomato-sauce", "perServe": 10, "enabled": true, "note": "~2 teaspoons per serve" },
         { "ingredient": "bbq-sauce", "perServe": 5, "enabled": true, "note": "fewer people take BBQ sauce" },
         { "ingredient": "mustard", "perServe": 3, "enabled": true, "note": "optional" },
-        { "ingredient": "oil", "perServe": 2, "enabled": true, "note": "for the hotplate and onions" },
-        { "ingredient": "napkins", "perServe": 1, "enabled": true, "note": "1 per serve" },
-        { "ingredient": "gloves", "perServe": 0.05, "enabled": false, "note": "about 1 glove per 20 serves" }
+        { "ingredient": "oil", "perServe": 2, "enabled": true, "note": "for the hotplate and onions" }
+      ],
+      "icon": "🌭",
+      "tabLabel": "Sausages",
+      "serveNoun": "sausage",
+      "defaultServes": 200
+    },
+    "egg-bacon": {
+      "name": "Egg and bacon sandwiches",
+      "icon": "🍳",
+      "tabLabel": "Egg & bacon",
+      "serveLabel": "sandwiches",
+      "serveNoun": "sandwich",
+      "defaultServes": 100,
+      "defaultSalePrice": 6.00,
+      "recipe": [
+        { "ingredient": "eggs", "perServe": 1, "enabled": true, "note": "1 egg per sandwich" },
+        { "ingredient": "bacon", "perServe": 2, "enabled": true, "note": "2 rashers per sandwich" },
+        { "ingredient": "bread", "perServe": 2, "enabled": true, "note": "2 slices per sandwich" },
+        { "ingredient": "tomato-sauce", "perServe": 10, "enabled": true, "note": "~2 teaspoons" },
+        { "ingredient": "bbq-sauce", "perServe": 5, "enabled": true, "note": "fewer people take BBQ sauce" },
+        { "ingredient": "oil", "perServe": 3, "enabled": true, "note": "for frying eggs and bacon" }
+      ]
+    },
+    "drinks": {
+      "name": "Drinks",
+      "icon": "🥤",
+      "tabLabel": "Drinks",
+      "kind": "items",
+      "sells": true,
+      "recipe": [
+        { "ingredient": "pepsi", "quantity": 24, "salePrice": 2.00, "enabled": true },
+        { "ingredient": "pepsi-max", "quantity": 24, "salePrice": 2.00, "enabled": true },
+        { "ingredient": "solo", "quantity": 30, "salePrice": 2.00, "enabled": true },
+        { "ingredient": "water", "quantity": 48, "salePrice": 2.00, "enabled": true }
+      ]
+    },
+    "consumables": {
+      "name": "Consumables",
+      "icon": "🧻",
+      "tabLabel": "Consumables",
+      "kind": "items",
+      "sells": false,
+      "recipe": [
+        { "ingredient": "napkins", "quantity": 1000, "enabled": true, "note": "about 1 per serve of food" },
+        { "ingredient": "gloves", "quantity": 100, "enabled": true },
+        { "ingredient": "paper-towels", "quantity": 3, "enabled": true },
+        { "ingredient": "garbage-bags", "quantity": 20, "enabled": true },
+        { "ingredient": "dish-liquid", "quantity": 1, "enabled": true }
       ]
     }
   }
