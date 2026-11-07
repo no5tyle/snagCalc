@@ -290,3 +290,13 @@ test('wizardProducts can leave out items that are switched off', () => {
   assert.ok(!ids.includes('ww-coca-cola-24'));
   assert.ok(ids.includes('ww-pepsi-24'));
 });
+
+test('oil is a consumable: one bottle per event, not in the food recipes', () => {
+  assert.equal(catalogue.ingredients.oil.name, 'Oil');
+  for (const id of ['sausage-sizzle', 'egg-bacon']) assert.ok(!catalogue.menu[id].recipe.some((r) => r.ingredient === 'oil'));
+  const r = calculateItems({ catalogue, menuId: 'consumables', servesByMenu: { 'sausage-sizzle': 500, 'egg-bacon': 200 } });
+  const oil = r.lines.find((l) => l.id === 'oil');
+  assert.equal(oil.needed, 1); // the same however many are sold
+  assert.equal(oil.purchase.packs[0].count, 1);
+  assert.equal(oil.purchase.cost, 4);
+});

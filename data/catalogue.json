@@ -54,11 +54,11 @@
       ]
     },
     "oil": {
-      "name": "Sunflower oil",
-      "unit": "ml",
-      "stockUnit": { "label": "L", "size": 1000 },
+      "name": "Oil",
+      "unit": "bottles",
+      "stockUnit": { "label": "bottles", "size": 1 },
       "products": [
-        { "id": "ww-sunflower-oil-750", "store": "woolworths", "name": "Sunflower oil 750ml", "packSize": 750, "packLabel": "750ml bottle", "price": 4.00, "stockcode": null, "url": null, "priceUpdated": "2026-11-07" }
+        { "id": "ww-sunflower-oil-750", "store": "woolworths", "name": "Oil 750ml", "packSize": 1, "packLabel": "750ml bottle", "price": 4.00, "stockcode": null, "url": null, "priceUpdated": "2026-11-07" }
       ]
     },
     "napkins": {
@@ -191,8 +191,7 @@
       "recipe": [
         { "ingredient": "sausages", "perServe": 1, "enabled": true, "note": "1 sausage per serve" },
         { "ingredient": "bread", "perServe": 1, "enabled": true, "note": "1 slice per sausage" },
-        { "ingredient": "onions", "perServe": 15, "enabled": true, "note": "~1 medium onion per 10 sausages" },
-        { "ingredient": "oil", "perServe": 2, "enabled": true, "note": "for the hotplate and onions" }
+        { "ingredient": "onions", "perServe": 15, "enabled": true, "note": "~1 medium onion per 10 sausages" }
       ],
       "icon": "🌭",
       "tabLabel": "Sausages",
@@ -210,8 +209,7 @@
       "recipe": [
         { "ingredient": "eggs", "perServe": 1, "enabled": true, "note": "1 egg per sandwich" },
         { "ingredient": "bacon", "perServe": 2, "enabled": true, "note": "2 rashers per sandwich" },
-        { "ingredient": "bread", "perServe": 2, "enabled": true, "note": "2 slices per sandwich" },
-        { "ingredient": "oil", "perServe": 3, "enabled": true, "note": "for frying eggs and bacon" }
+        { "ingredient": "bread", "perServe": 2, "enabled": true, "note": "2 slices per sandwich" }
       ]
     },
     "drinks": {
@@ -242,6 +240,7 @@
         { "ingredient": "tomato-sauce", "perServe": 10, "enabled": true, "note": "~2 teaspoons per sausage or sandwich" },
         { "ingredient": "bbq-sauce", "perServe": 5, "enabled": true, "note": "fewer people take BBQ sauce" },
         { "ingredient": "mustard", "perServe": 3, "servesFrom": ["sausage-sizzle"], "enabled": true, "note": "sausages only" },
+        { "ingredient": "oil", "quantity": 1, "enabled": true, "note": "about a bottle per event, for the hotplate" },
         { "ingredient": "napkins", "quantity": 1000, "enabled": true, "note": "about 1 per serve of food" },
         { "ingredient": "gloves", "quantity": 100, "enabled": true },
         { "ingredient": "paper-towels", "quantity": 3, "enabled": true },

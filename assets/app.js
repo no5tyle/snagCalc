@@ -109,7 +109,9 @@ function save() {
 
 // ---------- Formatting ----------
 
-const fmtPlain = (base, ing) => `${num(base, 1)} ${ing.unit}`;
+/** "1 bottle", "3 bottles": units are plain plurals (or g / ml, which stay as they are). */
+const unitFor = (n, unit) => (Math.abs(n - 1) < 1e-9 && /[^s]s$/.test(unit) ? unit.slice(0, -1) : unit);
+const fmtPlain = (base, ing) => `${num(base, 1)} ${unitFor(base, ing.unit)}`;
 
 function fmtQty(base, ing) {
   const main = esc(fmtPlain(base, ing));
