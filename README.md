@@ -10,6 +10,7 @@ Pick what you're planning from the tabs at the top: **Sausages**, **Egg & bacon*
 - **Plan (drinks, consumables):** enter how many of each item you want. Drinks also get a sale price each, so you can see takings and profit.
 - **Restock:** after day 1, enter what's sold (or used) and what's left. Snag Calc works out what to buy for the rest of the event.
 - **Shop at:** Woolworths only, Drakes only, or the cheapest store for each item.
+- **Price check wizard:** on first visit, Snag Calc asks what you're planning, then steps through each product's price one at a time so you can enter what your local store charges. Run it again any time from **Recipe & prices** or the link at the bottom of the page.
 - **Recipe & prices:** turn items on or off, change how much each serve uses, and enter your own local prices (shared across all tabs). Your changes are saved in your browser.
 - **Copy shopping list** (grouped by store) to paste into a group chat, or print it.
 - **Copy for spreadsheet** copies the list as a table with live formulas. Paste it into cell A1 of an empty Excel or Google Sheets sheet. Change the number of serves, buffer, quantities or prices there and the packs, costs, takings and profit recalculate.

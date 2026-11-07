@@ -207,3 +207,33 @@ table.data input[type=number] { max-width: 110px; padding: 4px 6px; }
   #price-table td.your-price { grid-column: 1 / -1; display: flex; align-items: center; gap: 10px; }
   #price-table td.your-price::before { content: "Your price"; color: var(--muted); font-size: .85rem; font-weight: 600; }
 }
+
+/* Price wizard */
+button.link { font: inherit; background: none; border: none; padding: 0; color: var(--accent); text-decoration: underline; cursor: pointer; }
+dialog.wizard {
+  width: min(520px, calc(100vw - 32px));
+  max-height: calc(100dvh - 32px);
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface);
+  color: var(--text);
+}
+dialog.wizard::backdrop { background: rgb(0 0 0 / .45); }
+.wizard form { display: flex; flex-direction: column; gap: 14px; padding: 20px; margin: 0; }
+.wizard h2 { margin: 0; font-size: 1.3rem; }
+.wizard p { margin: 0; }
+.wizard .progress { height: 6px; border-radius: 999px; background: var(--accent-soft); overflow: hidden; }
+.wizard .progress span { display: block; height: 100%; background: var(--accent); }
+.wizard .step-count { color: var(--muted); font-size: .85rem; font-weight: 600; }
+.wizard .product-name { font-size: 1.2rem; font-weight: 700; }
+.wizard .listed { background: var(--bg); border-radius: 8px; padding: 10px 12px; }
+.wizard .price-input input { font-size: 1.6rem; max-width: 200px; }
+.wizard .menu-choices { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+.wizard .menu-choices label { flex-direction: row; align-items: center; gap: 8px; padding: 10px; border: 1px solid var(--border); border-radius: 8px; font-weight: 600; }
+.wizard .menu-choices input { width: 20px; height: 20px; }
+.wizard .wizard-actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: space-between; align-items: center; }
+.wizard .wizard-actions .right { display: flex; gap: 8px; margin-left: auto; }
+.wizard .wizard-actions button { padding: 10px 16px; }
+.wizard ul.changes { margin: 0; padding-left: 20px; max-height: 40vh; overflow: auto; }
+@media print { dialog.wizard { display: none !important; } }

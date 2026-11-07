@@ -1,4 +1,12 @@
-import { calculate, calculateRestock, calculateItems, effectiveRecipe, effectiveItems } from './calc.js';
+import {
+  calculate,
+  calculateRestock,
+  calculateItems,
+  effectiveRecipe,
+  effectiveItems,
+  wizardProducts,
+  applyWizardPrices,
+} from './calc.js';
 import { buildSheet, toTSV } from './sheet.js';
 
 const STORAGE_KEY = 'snagcalc:v2';
@@ -48,7 +56,7 @@ function ms(id = settings.menu) {
 // ---------- Settings ----------
 
 function defaultSettings() {
-  return { store: 'cheapest', buffer: 5, prices: {}, menu: menuIds()[0], view: 'plan', menus: {} };
+  return { store: 'cheapest', buffer: 5, prices: {}, menu: menuIds()[0], view: 'plan', menus: {}, wizardDone: false, wizardMenus: null };
 }
 
 function readJSON(key) {
@@ -536,6 +544,178 @@ function wireActions(container, getters) {
   container.querySelector('[data-print]')?.addEventListener('click', () => window.print());
 }
 
+// ---------- Price wizard ----------
+
+let wiz = null; // { step, menus, items, answers }
+
+const fmtDate = (iso) => {
+  const d = new Date(`${iso}T00:00:00`);
+  return Number.isNaN(d.getTime()) ? iso : d.toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' });
+};
+const menuTag = (id) => `${catalogue.menu[id].icon ?? ''} ${catalogue.menu[id].tabLabel ?? catalogue.menu[id].name}`.trim();
+
+function openWizard() {
+  const saved = (settings.wizardMenus || []).filter((id) => catalogue.menu[id]);
+  wiz = { step: 0, menus: saved.length ? saved : menuIds(), items: [], answers: {} };
+  renderWizard();
+  const dlg = $('#wizard');
+  if (!dlg.open) {
+    if (typeof dlg.showModal === 'function') dlg.showModal();
+    else dlg.setAttribute('open', '');
+  }
+}
+
+function closeWizard() {
+  const dlg = $('#wizard');
+  if (dlg.open) {
+    if (typeof dlg.close === 'function') dlg.close();
+    else dlg.removeAttribute('open');
+  }
+  wiz = null;
+}
+
+/** Price to show for a product: this run's answer, else the saved override, else the listed price. */
+function wizardValue(product) {
+  if (product.id in wiz.answers) return wiz.answers[product.id];
+  return Number.isFinite(settings.prices[product.id]) ? settings.prices[product.id] : product.price;
+}
+
+function recordWizardAnswer() {
+  const input = $('#wizard [data-wiz-price]');
+  if (input) wiz.answers[input.dataset.wizPrice] = toNumber(input.value);
+}
+
+function renderWizard() {
+  const n = wiz.items.length;
+  const actions = (left, right) =>
+    `<div class="wizard-actions">${left}<span class="right">${right}</span></div>`;
+  let html;
+
+  if (wiz.step === 0) {
+    html = `<h2 id="wizard-title">Check your prices</h2>
+      <p>Snag Calc uses a price for every product. Check each one against your local store so the shopping totals are right. It takes a minute or two, and you can redo it any time from <strong>Recipe &amp; prices</strong>.</p>
+      <p><strong>What are you planning?</strong></p>
+      <div class="menu-choices">${menuIds()
+        .map((id) => `<label><input type="checkbox" data-wiz-menu="${esc(id)}" ${wiz.menus.includes(id) ? 'checked' : ''}>${esc(menuTag(id))}</label>`)
+        .join('')}</div>
+      <p class="notice" data-wiz-error hidden>Pick at least one.</p>
+      ${actions('<button type="button" class="secondary" data-act="skip">Skip for now</button>', '<button type="submit" class="primary">Start</button>')}`;
+  } else if (wiz.step <= n) {
+    const { product, menus } = wiz.items[wiz.step - 1];
+    const value = wizardValue(product);
+    const override = settings.prices[product.id];
+    const listedNote = product.priceUpdated
+      ? `Listed price <strong>${money(product.price)}</strong>, checked ${esc(fmtDate(product.priceUpdated))}`
+      : `Estimate <strong>${money(product.price)}</strong> <span class="badge-estimate">not checked yet</span>`;
+    html = `<div class="progress" aria-hidden="true"><span style="width:${Math.round(((wiz.step - 1) / n) * 100)}%"></span></div>
+      <p class="step-count">Price ${wiz.step} of ${n} · ${esc(menus.map(menuTag).join(', '))}</p>
+      <div>
+        <h2 id="wizard-title" class="product-name">${esc(product.name)}</h2>
+        <p class="sub">${esc(product.packLabel)} · <span class="store-tag">${esc(storeName(product.store))}</span></p>
+      </div>
+      <p class="listed">${listedNote}${
+        Number.isFinite(override) ? `<span class="sub">You saved ${money(override)} last time.</span>` : ''
+      }</p>
+      <label class="price-input">Price at your store
+        <span class="input-prefix"><span>$</span><input type="number" min="0" step="0.01" inputmode="decimal"
+          data-wiz-price="${esc(product.id)}" value="${valueAttr(value)}" placeholder="${product.price ?? ''}"></span>
+      </label>
+      <p><button type="button" class="link" data-act="listed">Use the listed price</button></p>
+      ${actions(
+        `<button type="button" class="secondary" data-act="back">Back</button>`,
+        `<button type="button" class="secondary" data-act="finish">Finish</button><button type="submit" class="primary">Next</button>`
+      )}`;
+  } else {
+    const draft = applyWizardPrices(catalogue, settings.prices, wiz.answers);
+    const changed = wizardProducts(catalogue, wiz.menus).filter(({ product }) => Number.isFinite(draft[product.id]));
+    html = `<div class="progress" aria-hidden="true"><span style="width:100%"></span></div>
+      <h2 id="wizard-title">All done</h2>
+      ${
+        changed.length
+          ? `<p>${changed.length} ${changed.length === 1 ? 'price differs' : 'prices differ'} from the listed price:</p>
+        <ul class="changes">${changed
+          .map(({ product }) => `<li>${esc(product.name)}: ${money(product.price)} → <strong>${money(draft[product.id])}</strong></li>`)
+          .join('')}</ul>`
+          : '<p>All your prices match the listed prices.</p>'
+      }
+      <p class="hint">Your prices are saved in this browser. You can change any of them under <strong>Recipe &amp; prices</strong>.</p>
+      ${actions('<button type="button" class="secondary" data-act="back">Back</button>', '<button type="submit" class="primary">Save prices</button>')}`;
+  }
+
+  $('#wizard').innerHTML = `<form novalidate>${html}</form>`;
+  const input = $('#wizard [data-wiz-price]');
+  if (input) {
+    input.focus();
+    input.select();
+  } else {
+    $('#wizard button[type=submit]')?.focus();
+  }
+}
+
+function wizardNext() {
+  const n = wiz.items.length;
+  if (wiz.step === 0) {
+    const menus = [...document.querySelectorAll('#wizard [data-wiz-menu]')].filter((c) => c.checked).map((c) => c.dataset.wizMenu);
+    if (!menus.length) {
+      $('#wizard [data-wiz-error]').hidden = false;
+      return;
+    }
+    wiz.menus = menus;
+    wiz.items = wizardProducts(catalogue, menus);
+    wiz.step = 1;
+  } else if (wiz.step <= n) {
+    recordWizardAnswer();
+    wiz.step += 1;
+  } else {
+    settings.prices = applyWizardPrices(catalogue, settings.prices, wiz.answers);
+    settings.wizardDone = true;
+    settings.wizardMenus = wiz.menus;
+    save();
+    closeWizard();
+    renderPriceTable();
+    renderResults();
+    return;
+  }
+  renderWizard();
+}
+
+function bindWizard() {
+  const dlg = $('#wizard');
+  dlg.addEventListener('submit', (e) => {
+    e.preventDefault();
+    wizardNext();
+  });
+  dlg.addEventListener('click', (e) => {
+    const act = e.target.closest('[data-act]')?.dataset.act;
+    if (!act || !wiz) return;
+    if (act === 'skip') {
+      settings.wizardDone = true;
+      save();
+      closeWizard();
+    } else if (act === 'back') {
+      recordWizardAnswer();
+      wiz.step = Math.max(0, wiz.step - 1);
+      renderWizard();
+    } else if (act === 'finish') {
+      recordWizardAnswer();
+      wiz.step = wiz.items.length + 1;
+      renderWizard();
+    } else if (act === 'listed') {
+      const input = $('#wizard [data-wiz-price]');
+      const item = wiz.items[wiz.step - 1];
+      input.value = item.product.price ?? '';
+      input.focus();
+    }
+  });
+  // Escape closes without saving this run's answers, and counts as "skip for now".
+  dlg.addEventListener('cancel', () => {
+    settings.wizardDone = true;
+    save();
+    wiz = null;
+  });
+  for (const btn of document.querySelectorAll('[data-open-wizard]')) btn.addEventListener('click', openWizard);
+}
+
 // ---------- Views ----------
 
 function selectView(name) {
@@ -654,12 +834,14 @@ function init() {
   if (!bound) {
     renderMenuTabs();
     bindInputs();
+    bindWizard();
     bound = true;
   }
   $('#store').value = settings.store;
   $('#buffer').value = settings.buffer;
   renderMenu();
   selectView(settings.view || 'plan');
+  if (!settings.wizardDone) openWizard();
 }
 
 async function start() {

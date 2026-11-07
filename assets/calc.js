@@ -246,3 +246,47 @@ export function calculateRestock({ totalDesired, sold, ...rest }) {
   const remainingServes = Math.max(0, total - soldClean);
   return { totalDesired: total, sold: soldClean, remainingServes, ...calculate({ ...rest, serves: remainingServes }) };
 }
+
+/**
+ * Products to ask about in the price wizard, for the chosen menus.
+ * Ordered by menu then recipe order, each product once, with the menus
+ * that use it. Includes items that are switched off, since they can be
+ * switched back on later.
+ * @returns {Array<{ product: object, ingredient: object, ingredientId: string, menus: string[] }>}
+ */
+export function wizardProducts(catalogue, menuIds = Object.keys(catalogue.menu)) {
+  const byId = new Map();
+  for (const menuId of menuIds) {
+    const menu = catalogue.menu[menuId];
+    if (!menu) continue;
+    for (const r of menu.recipe) {
+      const ingredient = catalogue.ingredients[r.ingredient];
+      if (!ingredient) continue;
+      for (const product of ingredient.products) {
+        const entry = byId.get(product.id);
+        if (entry) {
+          if (!entry.menus.includes(menuId)) entry.menus.push(menuId);
+        } else {
+          byId.set(product.id, { product, ingredient, ingredientId: r.ingredient, menus: [menuId] });
+        }
+      }
+    }
+  }
+  return [...byId.values()];
+}
+
+/**
+ * Turn wizard answers ({ [productId]: price | null }) into price overrides.
+ * An answer equal to the listed price, or left blank, removes the override.
+ */
+export function applyWizardPrices(catalogue, overrides, answers) {
+  const listed = new Map();
+  for (const ing of Object.values(catalogue.ingredients)) for (const p of ing.products) listed.set(p.id, p.price);
+  const out = { ...overrides };
+  for (const [id, v] of Object.entries(answers)) {
+    if (!listed.has(id)) continue;
+    if (v == null || !Number.isFinite(v) || v < 0 || round2(v) === listed.get(id)) delete out[id];
+    else out[id] = round2(v);
+  }
+  return out;
+}

@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { cheapestPacks, calculate, calculateRestock, calculateItems } from '../assets/calc.js';
+import { cheapestPacks, calculate, calculateRestock, calculateItems, wizardProducts, applyWizardPrices } from '../assets/calc.js';
 
 const catalogue = JSON.parse(readFileSync(new URL('../data/catalogue.json', import.meta.url)));
 
@@ -158,4 +158,25 @@ test('every menu references known ingredients with products', () => {
       assert.ok(ing.products.length, `${id}: ${r.ingredient} has products`);
     }
   }
+});
+
+test('wizardProducts lists each product once with the menus using it', () => {
+  const all = wizardProducts(catalogue);
+  const ids = all.map((e) => e.product.id);
+  assert.equal(new Set(ids).size, ids.length);
+  const bread = all.find((e) => e.product.id === 'ww-bread-white');
+  assert.deepEqual(bread.menus, ['sausage-sizzle', 'egg-bacon']);
+  const drinksOnly = wizardProducts(catalogue, ['drinks']);
+  assert.ok(drinksOnly.every((e) => e.menus.includes('drinks')));
+  assert.ok(!drinksOnly.some((e) => e.product.id === 'ww-bread-white'));
+});
+
+test('applyWizardPrices sets changed prices and clears unchanged ones', () => {
+  const out = applyWizardPrices(catalogue, { 'ww-bread-white': 3, 'ww-pepsi-24': 20 }, {
+    'ww-bread-white': 2.8, // same as listed: override removed
+    'dk-slapes-bbq-1.5kg': 10.5,
+    'ww-eggs-12': null, // blank: use listed
+    'not-a-product': 5,
+  });
+  assert.deepEqual(out, { 'ww-pepsi-24': 20, 'dk-slapes-bbq-1.5kg': 10.5 });
 });

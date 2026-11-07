@@ -53,6 +53,7 @@
       <div class="card">
         <h2>Prices</h2>
         <p class="hint" id="price-info"></p>
+        <p><button class="primary" data-open-wizard>Check prices step by step</button></p>
         <div class="table-scroll"><table id="price-table" class="data stack"></table></div>
       </div>
       <div class="card">
@@ -62,8 +63,11 @@
   </main>
 
   <footer class="wrap site-footer">
-    <p>Prices change over time and between stores, so check them before you shop. Your settings are saved in this browser only.</p>
+    <p>Prices change over time and between stores, so check them before you shop. Your settings are saved in this browser only.
+      <button class="link" data-open-wizard>Check prices step by step</button></p>
   </footer>
+
+  <dialog id="wizard" class="wizard" aria-labelledby="wizard-title"></dialog>
 
   <script type="module" src="assets/app.js"></script>
 </body>
