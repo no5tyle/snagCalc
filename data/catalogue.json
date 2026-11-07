@@ -10,7 +10,7 @@
       "unit": "sausages",
       "stockUnit": { "label": "sausages", "size": 1 },
       "products": [
-        { "id": "dk-slapes-bbq-1.5kg", "store": "drakes", "name": "Slape & Sons Traditional BBQ Sausages 21 pack 1.5kg", "packSize": 21, "packLabel": "1.5kg (21 sausages)", "price": 11.00, "url": null, "priceUpdated": "2026-11-07" }
+        { "id": "dk-slapes-bbq-1.5kg", "store": "drakes", "name": "Slape & Sons Traditional BBQ Sausages 21 pack 1.5kg", "packSize": 21, "packLabel": "1.5kg (21 sausages)", "price": 11.00, "url": "https://142.drakes.com.au/lines/slape-sons-traditional-range-bbq-sausages-21-pack-1-5kg", "priceUpdated": "2026-11-07" }
       ]
     },
     "bread": {
