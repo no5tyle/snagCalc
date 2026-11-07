@@ -160,9 +160,6 @@
         { "ingredient": "sausages", "perServe": 1, "enabled": true, "note": "1 sausage per serve" },
         { "ingredient": "bread", "perServe": 1, "enabled": true, "note": "1 slice per sausage" },
         { "ingredient": "onions", "perServe": 15, "enabled": true, "note": "~1 medium onion per 10 sausages" },
-        { "ingredient": "tomato-sauce", "perServe": 10, "enabled": true, "note": "~2 teaspoons per serve" },
-        { "ingredient": "bbq-sauce", "perServe": 5, "enabled": true, "note": "fewer people take BBQ sauce" },
-        { "ingredient": "mustard", "perServe": 3, "enabled": true, "note": "optional" },
         { "ingredient": "oil", "perServe": 2, "enabled": true, "note": "for the hotplate and onions" }
       ],
       "icon": "🌭",
@@ -182,8 +179,6 @@
         { "ingredient": "eggs", "perServe": 1, "enabled": true, "note": "1 egg per sandwich" },
         { "ingredient": "bacon", "perServe": 2, "enabled": true, "note": "2 rashers per sandwich" },
         { "ingredient": "bread", "perServe": 2, "enabled": true, "note": "2 slices per sandwich" },
-        { "ingredient": "tomato-sauce", "perServe": 10, "enabled": true, "note": "~2 teaspoons" },
-        { "ingredient": "bbq-sauce", "perServe": 5, "enabled": true, "note": "fewer people take BBQ sauce" },
         { "ingredient": "oil", "perServe": 3, "enabled": true, "note": "for frying eggs and bacon" }
       ]
     },
@@ -207,6 +202,9 @@
       "kind": "items",
       "sells": false,
       "recipe": [
+        { "ingredient": "tomato-sauce", "perServe": 10, "enabled": true, "note": "~2 teaspoons per sausage or sandwich" },
+        { "ingredient": "bbq-sauce", "perServe": 5, "enabled": true, "note": "fewer people take BBQ sauce" },
+        { "ingredient": "mustard", "perServe": 3, "servesFrom": ["sausage-sizzle"], "enabled": true, "note": "sausages only" },
         { "ingredient": "napkins", "quantity": 1000, "enabled": true, "note": "about 1 per serve of food" },
         { "ingredient": "gloves", "quantity": 100, "enabled": true },
         { "ingredient": "paper-towels", "quantity": 3, "enabled": true },

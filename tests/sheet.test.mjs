@@ -28,7 +28,8 @@ function evaluate(rows) {
           for (let r = Number(r1); r <= Number(r2); r++) refs.push(`v("${c1}${r}")`);
           return `[${refs.join(',')}]`;
         })
-        .replace(/(?<![A-Z"])\$?([A-Z]{1,2})\$?(\d+)(?![\d"(])/g, (_, c, r) => `v("${c}${r}")`);
+        .replace(/(?<![A-Z"])\$?([A-Z]{1,2})\$?(\d+)(?![\d"(])/g, (_, c, r) => `v("${c}${r}")`)
+        .replace(/(?<![<>=!])=(?!=)/g, '==');
       const fns = {
         SUM: (a) => a.reduce((s, x) => s + (Number(x) || 0), 0),
         ROUNDUP: (x, d) => Math.ceil(x * 10 ** d) / 10 ** d,
@@ -36,7 +37,12 @@ function evaluate(rows) {
         MAX: Math.max,
         IF: (c, a, b) => (c ? a : b),
       };
-      out = Function('v', ...Object.keys(fns), `return (${expr});`)((r) => Number(value(r)) || 0, ...Object.values(fns));
+      // Text stays text (e.g. "Yes"); blanks count as 0, as in a spreadsheet
+      const cellValue = (r) => {
+        const x = value(r);
+        return typeof x === 'string' && x !== '' && Number.isNaN(Number(x)) ? x : Number(x) || 0;
+      };
+      out = Function('v', ...Object.keys(fns), `return (${expr});`)(cellValue, ...Object.values(fns));
     } else out = v;
     cache.set(key, out);
     return out;
@@ -97,4 +103,29 @@ test('consumables restock sheet matches the app', () => {
 
 test('toTSV separates cells with tabs and strips tabs and newlines from text', () => {
   assert.equal(toTSV([['a', 1], ['b\tc', '=A1'], ['d\ne']]), 'a\t1\nb c\t=A1\nd e');
+});
+
+test('consumables sheet scales sauces from the food serves cells', () => {
+  const servesByMenu = { 'sausage-sizzle': 200, 'egg-bacon': 100 };
+  const result = calculateItems({ catalogue, menuId: 'consumables', store: 'cheapest', servesByMenu, bufferPct: 5 });
+  const foodServes = [
+    { id: 'sausage-sizzle', label: 'Sausages to sell', serves: 200 },
+    { id: 'egg-bacon', label: 'Sandwiches to sell', serves: 100 },
+  ];
+  const rows = buildSheet({ kind: 'items', mode: 'plan', result, title: 'Consumables', bufferPct: 5, foodServes });
+  near(labelled(rows, evaluate(rows), 'Shopping total'), result.totalCost);
+  // Doubling the sandwiches in the sheet matches the app with double sandwiches
+  rows[2][1] = 200;
+  const more = calculateItems({ catalogue, menuId: 'consumables', store: 'cheapest', servesByMenu: { ...servesByMenu, 'egg-bacon': 200 }, bufferPct: 5 });
+  near(labelled(rows, evaluate(rows), 'Shopping total'), more.totalCost);
+});
+
+test('donated items cost nothing in the sheet and add to donations worth', () => {
+  const opts = { catalogue, menuId: 'sausage-sizzle', serves: 200, bufferPct: 5, store: 'cheapest' };
+  const result = calculate({ ...opts, donated: { 'dk-slapes-bbq-1.5kg': true } });
+  const rows = buildSheet({ kind: 'recipe', mode: 'plan', result, title: 'Test', serveLabel: 'sausages', serveNoun: 'sausage', bufferPct: 5, salePrice: 3 });
+  const v = evaluate(rows);
+  near(labelled(rows, v, 'Shopping total'), result.totalCost);
+  near(labelled(rows, v, 'Donations worth'), result.donatedValue);
+  near(result.donatedValue, 110);
 });

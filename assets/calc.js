@@ -100,12 +100,21 @@ export function effectiveRecipe(catalogue, menuId, overrides = {}) {
   });
 }
 
-/** Apply price overrides ({ [productId]: price }) to a product list. */
-export function pricedProducts(products, priceOverrides = {}) {
-  return products.map((p) =>
-    Number.isFinite(priceOverrides[p.id]) ? { ...p, price: priceOverrides[p.id], overridden: true } : p
-  );
+/**
+ * Apply price overrides ({ [productId]: price }) and donations
+ * ({ [productId]: true }) to a product list. A donated product costs nothing;
+ * its price is kept as `value`, what it would have cost.
+ */
+export function pricedProducts(products, priceOverrides = {}, donated = {}) {
+  return products.map((p) => {
+    const q = Number.isFinite(priceOverrides[p.id]) ? { ...p, price: priceOverrides[p.id], overridden: true } : p;
+    return donated[p.id] ? { ...q, price: 0, value: Number.isFinite(q.price) ? q.price : 0, donated: true } : q;
+  });
 }
+
+/** Value of the donated packs in a purchase. */
+const donatedValueOf = (purchase) =>
+  round2(purchase.packs.reduce((s, { product, count }) => s + (product.donated ? product.value * count : 0), 0));
 
 /**
  * Choose products for an ingredient given the store mode.
@@ -150,6 +159,7 @@ export function calculate({
   stock = {},
   recipeOverrides = {},
   priceOverrides = {},
+  donated = {},
 }) {
   const storeIds = Object.keys(catalogue.stores);
   const servesClean = Math.max(0, Number(serves) || 0);
@@ -163,8 +173,9 @@ export function calculate({
       const needed = roundQty(servesClean * r.perServe * factor);
       const onHand = Math.max(0, Number(stock[r.ingredient]) || 0);
       const shortfall = roundQty(Math.max(0, needed - onHand));
-      const products = pricedProducts(ingredient.products, priceOverrides);
+      const products = pricedProducts(ingredient.products, priceOverrides, donated);
       const purchase = purchaseFor(shortfall, products, store, storeIds);
+      purchase.donatedValue = donatedValueOf(purchase);
       return { id: r.ingredient, ingredient, perServe: r.perServe, needed, onHand, shortfall, products, purchase };
     });
 
@@ -175,13 +186,17 @@ function totals(lines) {
   const knownCosts = lines.map((l) => l.purchase.cost).filter((c) => c != null);
   const totalCost = round2(knownCosts.reduce((s, c) => s + c, 0));
   const incomplete = lines.some((l) => l.purchase.cost == null && l.shortfall > 0);
-  return { totalCost, incomplete };
+  const donatedValue = round2(lines.reduce((s, l) => s + (l.purchase.donatedValue || 0), 0));
+  return { totalCost, incomplete, donatedValue };
 }
 
 /**
  * Resolve the item list for a quantity-based menu (drinks, consumables),
  * applying user overrides.
- * overrides: { [ingredientId]: { quantity?: number, salePrice?: number, enabled?: boolean } }
+ * overrides: { [ingredientId]: { quantity?: number, perServe?: number, salePrice?: number, enabled?: boolean } }
+ *
+ * A line with `perServe` is scaled from food serves (see calculateItems)
+ * instead of having a fixed `quantity`.
  */
 export function effectiveItems(catalogue, menuId, overrides = {}) {
   const menu = catalogue.menu[menuId];
@@ -191,6 +206,7 @@ export function effectiveItems(catalogue, menuId, overrides = {}) {
     return {
       ...r,
       quantity: Number.isFinite(o.quantity) ? o.quantity : r.quantity ?? 0,
+      perServe: r.perServe == null ? undefined : Number.isFinite(o.perServe) ? o.perServe : r.perServe,
       salePrice: Number.isFinite(o.salePrice) ? o.salePrice : r.salePrice ?? 0,
       enabled: typeof o.enabled === 'boolean' ? o.enabled : r.enabled !== false,
     };
@@ -200,6 +216,12 @@ export function effectiveItems(catalogue, menuId, overrides = {}) {
 /**
  * Quantity-based calculation: each line has its own planned quantity rather
  * than being scaled from a number of serves. No wastage buffer is applied.
+ *
+ * Lines with `perServe` (e.g. sauces) are the exception: they are scaled from
+ * the food serves in `servesByMenu` ({ [menuId]: serves }), counting the menus
+ * listed in the line's `servesFrom` (all of them if it has none), plus the
+ * wastage buffer. Their sold/used count is ignored, since a restock passes the
+ * serves still to sell.
  *
  * For a restock, pass `sold` (sold or used so far) and `stock` (left over),
  * both { [ingredientId]: number } in base units. Each line then needs
@@ -215,22 +237,42 @@ export function calculateItems({
   priceOverrides = {},
   sold = {},
   stock = {},
+  donated = {},
+  servesByMenu = {},
+  bufferPct = 0,
 }) {
   const storeIds = Object.keys(catalogue.stores);
+  const factor = 1 + Math.max(0, Number(bufferPct) || 0) / 100;
   const lines = effectiveItems(catalogue, menuId, itemOverrides)
     .filter((r) => r.enabled)
     .map((r) => {
       const ingredient = catalogue.ingredients[r.ingredient];
       if (!ingredient) throw new Error(`Unknown ingredient: ${r.ingredient}`);
-      const planned = Math.max(0, Number(r.quantity) || 0);
-      const soldQty = Math.max(0, Number(sold[r.ingredient]) || 0);
+      const scaled = Number.isFinite(r.perServe);
+      const servesFrom = scaled ? r.servesFrom ?? Object.keys(servesByMenu) : [];
+      const serves = servesFrom.reduce((sum, id) => sum + Math.max(0, Number(servesByMenu[id]) || 0), 0);
+      const planned = scaled ? roundQty(serves * r.perServe * factor) : Math.max(0, Number(r.quantity) || 0);
+      const soldQty = scaled ? 0 : Math.max(0, Number(sold[r.ingredient]) || 0);
       const needed = roundQty(Math.max(0, planned - soldQty));
       const onHand = Math.max(0, Number(stock[r.ingredient]) || 0);
       const shortfall = roundQty(Math.max(0, needed - onHand));
-      const products = pricedProducts(ingredient.products, priceOverrides);
+      const products = pricedProducts(ingredient.products, priceOverrides, donated);
       const purchase = purchaseFor(shortfall, products, store, storeIds);
+      purchase.donatedValue = donatedValueOf(purchase);
       const salePrice = Math.max(0, Number(r.salePrice) || 0);
-      return { id: r.ingredient, ingredient, planned, sold: soldQty, needed, onHand, shortfall, salePrice, products, purchase };
+      return {
+        id: r.ingredient,
+        ingredient,
+        ...(scaled ? { perServe: r.perServe, servesFrom, serves } : {}),
+        planned,
+        sold: soldQty,
+        needed,
+        onHand,
+        shortfall,
+        salePrice,
+        products,
+        purchase,
+      };
     });
   const revenue = round2(lines.reduce((s, l) => s + l.needed * l.salePrice, 0));
   return { lines, revenue, ...totals(lines) };

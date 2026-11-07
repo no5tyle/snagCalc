@@ -56,7 +56,7 @@ function ms(id = settings.menu) {
 // ---------- Settings ----------
 
 function defaultSettings() {
-  return { store: 'cheapest', buffer: 5, prices: {}, menu: menuIds()[0], view: 'plan', menus: {}, wizardDone: false, wizardMenus: null };
+  return { store: 'cheapest', buffer: 5, prices: {}, donated: {}, menu: menuIds()[0], view: 'plan', menus: {}, wizardDone: false, wizardMenus: null };
 }
 
 function readJSON(key) {
@@ -72,7 +72,7 @@ function loadSettings() {
   const base = defaultSettings();
   const saved = readJSON(STORAGE_KEY);
   if (saved) {
-    const s = { ...base, ...saved, menus: saved.menus || {} };
+    const s = { ...base, ...saved, menus: saved.menus || {}, donated: saved.donated || {} };
     if (!catalogue.menu[s.menu]) s.menu = base.menu;
     if (!VIEWS.includes(s.view)) s.view = 'plan';
     return s;
@@ -119,7 +119,10 @@ function buyCell(line) {
   if (line.shortfall <= 0) return '<span class="none">Nothing needed</span>';
   if (p.unavailable) return '<span class="badge-estimate">No product listed</span>';
   const items = p.packs
-    .map(({ product, count }) => `${count} × ${esc(product.name)} <span class="sub">${esc(product.packLabel)}</span>`)
+    .map(
+      ({ product, count }) =>
+        `${count} × ${esc(product.name)}${product.donated ? ' <span class="badge-donated">Donated</span>' : ''} <span class="sub">${esc(product.packLabel)}</span>`
+    )
     .join('');
   return `${items}<span class="sub">Gives ${esc(fmtPlain(p.units, line.ingredient))}${
     p.store ? ` <span class="store-tag">${esc(storeName(p.store))}</span>` : ''
@@ -130,21 +133,31 @@ function shoppingListText(result, heading) {
   const byStore = new Map();
   for (const line of result.lines) {
     for (const { product, count } of line.purchase.packs) {
-      const key = line.purchase.store ?? 'other';
+      const key = product.donated ? 'donated' : line.purchase.store ?? 'other';
       if (!byStore.has(key)) byStore.set(key, []);
-      const cost = Number.isFinite(product.price) ? ` (${money(product.price * count)})` : '';
+      const cost = product.donated
+        ? product.value
+          ? ` (worth ${money(product.value * count)})`
+          : ''
+        : Number.isFinite(product.price)
+          ? ` (${money(product.price * count)})`
+          : '';
       byStore.get(key).push(`- ${count} × ${product.name} – ${product.packLabel}${cost}`);
     }
   }
   if (!byStore.size) return `${heading}\nNothing to buy.`;
   const parts = [heading];
-  for (const [store, items] of byStore) parts.push(`\n${storeName(store)}:\n${items.join('\n')}`);
+  // Stores first, donations last
+  const entries = [...byStore].sort(([a], [b]) => (a === 'donated') - (b === 'donated'));
+  for (const [store, items] of entries) parts.push(`\n${store === 'donated' ? 'Donated' : storeName(store)}:\n${items.join('\n')}`);
   parts.push(`\nTotal: ${money(result.totalCost)}${result.incomplete ? ' (some prices missing)' : ''}`);
+  if (result.donatedValue > 0) parts.push(`Donations worth: ${money(result.donatedValue)}`);
   return parts.join('\n');
 }
 
 function statsFor(result, restock) {
   const stats = [['Shopping total', money(result.totalCost)]];
+  if (result.donatedValue > 0) stats.push(['Donations worth', money(result.donatedValue)]);
   if (isItems()) {
     if (!menuDef().sells) return stats;
     stats.push([restock ? 'Takings for the rest' : 'Takings if all sell', money(result.revenue)]);
@@ -176,9 +189,11 @@ function resultsCard(result, { restock = false, title }) {
         ${restock ? `<td class="num" data-label="Have"><div>${fmtQty(l.onHand, l.ingredient)}</div></td>` : ''}
         <td data-label="Buy"><div>${buyCell(l)}</div></td>
         <td class="num" data-label="Cost"><div>${money(l.purchase.cost)}${
-          l.purchase.packs.some(({ product }) => !product.priceUpdated && !product.overridden)
-            ? '<span class="sub"><span class="badge-estimate">estimate</span></span>'
-            : ''
+          l.purchase.donatedValue > 0
+            ? `<span class="sub">donated, worth ${money(l.purchase.donatedValue)}</span>`
+            : l.purchase.packs.some(({ product }) => !product.priceUpdated && !product.overridden && !product.donated)
+              ? '<span class="sub"><span class="badge-estimate">estimate</span></span>'
+              : ''
         }</div></td>
       </tr>`
     )
@@ -217,11 +232,41 @@ function stockInBaseUnits(stock) {
   return out;
 }
 
+/** Food menus (sausages, egg & bacon): the ones sauces and other per-serve consumables scale from. */
+const foodMenuIds = () => menuIds().filter((id) => !isItems(id));
+
+/** Food serves per menu: planned, or still to sell for a restock. */
+function servesByMenu(mode) {
+  const out = {};
+  for (const id of foodMenuIds()) {
+    const m = ms(id);
+    out[id] = mode === 'restock' ? Math.max(0, (m.restock.total ?? 0) - (m.restock.sold ?? 0)) : m.planServes ?? 0;
+  }
+  return out;
+}
+
+/** Whether the current items menu has lines scaled from food serves. */
+const hasScaledItems = (id = settings.menu) =>
+  isItems(id) && effectiveItems(catalogue, id, ms(id).items).some((r) => r.enabled && Number.isFinite(r.perServe));
+
+function itemsResult(mode) {
+  const m = ms();
+  return calculateItems({
+    catalogue,
+    menuId: settings.menu,
+    store: settings.store,
+    itemOverrides: m.items,
+    priceOverrides: settings.prices,
+    donated: settings.donated,
+    servesByMenu: servesByMenu(mode),
+    bufferPct: settings.buffer,
+    ...(mode === 'restock' ? { sold: m.restock.sold, stock: stockInBaseUnits(m.restock.stock) } : {}),
+  });
+}
+
 function planResult() {
   const m = ms();
-  if (isItems()) {
-    return calculateItems({ catalogue, menuId: settings.menu, store: settings.store, itemOverrides: m.items, priceOverrides: settings.prices });
-  }
+  if (isItems()) return itemsResult('plan');
   return calculate({
     catalogue,
     menuId: settings.menu,
@@ -229,23 +274,14 @@ function planResult() {
     store: settings.store,
     recipeOverrides: m.recipe,
     priceOverrides: settings.prices,
+    donated: settings.donated,
     serves: m.planServes,
   });
 }
 
 function restockResult() {
   const m = ms();
-  if (isItems()) {
-    return calculateItems({
-      catalogue,
-      menuId: settings.menu,
-      store: settings.store,
-      itemOverrides: m.items,
-      priceOverrides: settings.prices,
-      sold: m.restock.sold,
-      stock: m.restock.stock,
-    });
-  }
+  if (isItems()) return itemsResult('restock');
   return calculateRestock({
     catalogue,
     menuId: settings.menu,
@@ -253,6 +289,7 @@ function restockResult() {
     store: settings.store,
     recipeOverrides: m.recipe,
     priceOverrides: settings.prices,
+    donated: settings.donated,
     totalDesired: m.restock.total,
     sold: m.restock.sold,
     stock: stockInBaseUnits(m.restock.stock),
@@ -260,6 +297,12 @@ function restockResult() {
 }
 
 function sheetText(result, mode, title) {
+  const serves = servesByMenu(mode);
+  const foodServes = foodMenuIds().map((id) => ({
+    id,
+    label: `${cap(serveLabel(id))} ${mode === 'restock' ? 'still to sell' : 'to sell'}`,
+    serves: serves[id],
+  }));
   return toTSV(
     buildSheet({
       kind: isItems() ? 'items' : 'recipe',
@@ -271,6 +314,7 @@ function sheetText(result, mode, title) {
       bufferPct: settings.buffer,
       salePrice: ms().salePrice,
       sells: Boolean(menuDef().sells),
+      foodServes,
       storeName,
     })
   );
@@ -324,11 +368,18 @@ function renderResults() {
 
 // ---------- Rendering: inputs (re-rendered when the menu changes) ----------
 
-function foodServesNote() {
-  const parts = menuIds()
-    .filter((id) => !isItems(id))
-    .map((id) => `${num(ms(id).planServes ?? 0, 0)} ${serveLabel(id)}`);
-  return parts.length ? `Your plans add up to ${parts.join(' and ')}.` : '';
+/** e.g. "200 sausages and 100 sandwiches" (planned, or still to sell for a restock). */
+function foodServesText(mode = 'plan') {
+  const serves = servesByMenu(mode);
+  return foodMenuIds()
+    .map((id) => `${num(serves[id], 0)} ${serveLabel(id)}`)
+    .join(' and ');
+}
+
+/** "sausage or sandwich", for the menus a per-serve line scales from. */
+function perServeLabel(r) {
+  const ids = r.servesFrom ?? foodMenuIds();
+  return ids.map((id) => serveNoun(id)).join(' or ');
 }
 
 function renderPlanInputs() {
@@ -346,9 +397,14 @@ function renderPlanInputs() {
     return;
   }
   const items = effectiveItems(catalogue, settings.menu, m.items).filter((r) => r.enabled);
+  const scaled = items.some((r) => Number.isFinite(r.perServe));
   const hint = menu.sells
     ? 'How many of each do you want to sell? Set the sale price for each one too.'
-    : `How many of each do you need for the event? ${esc(foodServesNote())} Napkins are usually about 1 per serve.`;
+    : `${
+        scaled
+          ? `Sauces are worked out from your plans on the other tabs: <strong>${esc(foodServesText())}</strong>. Set how much each one uses. `
+          : ''
+      }For everything else, enter how many you need for the event. Napkins are usually about 1 per serve.`;
   $('#plan-inputs').innerHTML = `<h2>${esc(menu.name)}</h2>
     <p class="hint">${hint}</p>
     ${items.length ? '' : '<p class="hint">Nothing selected. Turn items on under Recipe &amp; prices.</p>'}
@@ -357,9 +413,15 @@ function renderPlanInputs() {
         const ing = catalogue.ingredients[r.ingredient];
         return `<div class="item-row">
           <span class="item-name">${esc(ing.name)}${r.note ? `<span class="sub">${esc(r.note)}</span>` : ''}</span>
-          <label>Quantity
+          ${
+            Number.isFinite(r.perServe)
+              ? `<label>Per ${esc(perServeLabel(r))}
+            <span class="input-suffix"><input type="number" min="0" step="any" inputmode="decimal" data-per-item="${esc(r.ingredient)}" value="${valueAttr(r.perServe)}"><span>${esc(ing.unit)}</span></span>
+          </label>`
+              : `<label>Quantity
             <span class="input-suffix"><input type="number" min="0" step="1" inputmode="numeric" data-qty="${esc(r.ingredient)}" value="${valueAttr(r.quantity)}"><span>${esc(ing.unit)}</span></span>
-          </label>
+          </label>`
+          }
           ${
             menu.sells
               ? `<label>Sale price each
@@ -402,22 +464,36 @@ function renderRestockInputs() {
     return;
   }
   const items = effectiveItems(catalogue, settings.menu, m.items).filter((r) => r.enabled);
+  const scaled = items.some((r) => Number.isFinite(r.perServe));
   $('#restock-inputs').innerHTML = `<p class="hint">At the end of day 1, enter how many of each you've ${
     menuDef().sells ? 'sold' : 'used'
-  } and how many are left. Snag Calc buys enough to reach the quantities on the Plan tab.</p>
+  } and how many are left. Snag Calc buys enough to reach the quantities on the Plan tab.${
+    scaled
+      ? ` Sauces are worked out from what's still to sell on the other tabs' Restock: <strong>${esc(foodServesText('restock'))}</strong>, so just enter what's left.`
+      : ''
+  }</p>
     <p id="restock-summary" class="summary"></p>
     <div class="item-grid">${items
       .map((r) => {
         const ing = catalogue.ingredients[r.ingredient];
+        const perServe = Number.isFinite(r.perServe);
         return `<div class="item-row">
-          <span class="item-name">${esc(ing.name)}<span class="sub">Planned: ${num(r.quantity, 0)} ${esc(ing.unit)}</span></span>
-          <label>${menuDef().sells ? 'Sold' : 'Used'}
+          <span class="item-name">${esc(ing.name)}<span class="sub">${
+            perServe
+              ? `${num(r.perServe, 1)} ${esc(ing.unit)} per ${esc(perServeLabel(r))}`
+              : `Planned: ${num(r.quantity, 0)} ${esc(ing.unit)}`
+          }</span></span>
+          ${
+            perServe
+              ? '<span aria-hidden="true"></span>'
+              : `<label>${menuDef().sells ? 'Sold' : 'Used'}
             <span class="input-suffix"><input type="number" min="0" step="1" inputmode="numeric" data-sold="${esc(r.ingredient)}"
               value="${valueAttr(m.restock.sold[r.ingredient])}" placeholder="0"><span>${esc(ing.unit)}</span></span>
-          </label>
+          </label>`
+          }
           <label>Left over
-            <span class="input-suffix"><input type="number" min="0" step="1" inputmode="numeric" data-stock="${esc(r.ingredient)}"
-              value="${valueAttr(m.restock.stock[r.ingredient])}" placeholder="0"><span>${esc(ing.unit)}</span></span>
+            <span class="input-suffix"><input type="number" min="0" step="${(ing.stockUnit?.size ?? 1) > 1 ? '0.1' : '1'}" inputmode="decimal" data-stock="${esc(r.ingredient)}"
+              value="${valueAttr(m.restock.stock[r.ingredient])}" placeholder="0"><span>${esc(ing.stockUnit?.label ?? ing.unit)}</span></span>
           </label>
         </div>`;
       })
@@ -474,14 +550,16 @@ function renderPriceTable() {
           p.priceUpdated ? `checked ${esc(p.priceUpdated)}` : '<span class="badge-estimate">estimate</span>'
         }</span></td>
         <td class="your-price"><span class="input-prefix"><span>$</span><input type="number" min="0" step="0.01" data-price="${esc(p.id)}"
-          value="${valueAttr(override)}" placeholder="${p.price ?? ''}" aria-label="Your price for ${esc(p.name)} at ${esc(storeName(p.store))}"></span></td>
+          value="${valueAttr(override)}" placeholder="${p.price ?? ''}" aria-label="Your price for ${esc(p.name)} at ${esc(storeName(p.store))}"></span>
+          <label class="donated-check"><input type="checkbox" data-donated="${esc(p.id)}" ${settings.donated[p.id] ? 'checked' : ''}>Donated</label></td>
       </tr>`;
     }
   }
   $('#price-table').innerHTML = `<thead><tr><th>Product</th><th>Store</th><th class="num">Listed price</th><th>Your price</th></tr></thead><tbody>${rows}</tbody>`;
   $('#price-info').textContent =
     'Listed prices come from the shared price list in this site. Prices marked "estimate" haven\'t been checked against the store yet. ' +
-    'Enter your own price to override one for this browser. Prices are shared across all tabs.';
+    'Enter your own price to override one for this browser. Prices are shared across all tabs. ' +
+    'Tick Donated for anything given to the group: it costs nothing on the shopping list, and its price counts as the value of the donation.';
 }
 
 function renderMenuTabs() {
@@ -498,7 +576,7 @@ function renderMenu() {
   for (const b of document.querySelectorAll('#menu-tabs [data-menu]')) {
     b.setAttribute('aria-selected', String(b.dataset.menu === settings.menu));
   }
-  $('#buffer-label').hidden = isItems();
+  $('#buffer-label').hidden = isItems() && !hasScaledItems();
   renderPlanInputs();
   renderRestockInputs();
   renderRecipeTable();
@@ -556,7 +634,7 @@ const menuTag = (id) => `${catalogue.menu[id].icon ?? ''} ${catalogue.menu[id].t
 
 function openWizard() {
   const saved = (settings.wizardMenus || []).filter((id) => catalogue.menu[id]);
-  wiz = { step: 0, menus: saved.length ? saved : menuIds(), items: [], answers: {} };
+  wiz = { step: 0, menus: saved.length ? saved : menuIds(), items: [], answers: {}, donated: {} };
   renderWizard();
   const dlg = $('#wizard');
   if (!dlg.open) {
@@ -580,9 +658,19 @@ function wizardValue(product) {
   return Number.isFinite(settings.prices[product.id]) ? settings.prices[product.id] : product.price;
 }
 
+const wizardDonated = (product) => (product.id in wiz.donated ? wiz.donated[product.id] : Boolean(settings.donated[product.id]));
+
 function recordWizardAnswer() {
   const input = $('#wizard [data-wiz-price]');
-  if (input) wiz.answers[input.dataset.wizPrice] = toNumber(input.value);
+  if (!input) return;
+  wiz.answers[input.dataset.wizPrice] = toNumber(input.value);
+  wiz.donated[input.dataset.wizPrice] = $('#wizard [data-wiz-donated]').checked;
+}
+
+/** Wording of the price field: a price normally, the donation's value when donated. */
+function wizardPriceWording(donated) {
+  $('#wizard [data-wiz-price-label]').textContent = donated ? 'What it would have cost' : 'Price at your store';
+  $('#wizard [data-wiz-donated-hint]').hidden = !donated;
 }
 
 function renderWizard() {
@@ -616,10 +704,15 @@ function renderWizard() {
       <p class="listed">${listedNote}${
         Number.isFinite(override) ? `<span class="sub">You saved ${money(override)} last time.</span>` : ''
       }</p>
-      <label class="price-input">Price at your store
+      <label class="switch-row">
+        <span><strong>Donated</strong><span class="sub">Someone is giving this to the group</span></span>
+        <input type="checkbox" class="switch" role="switch" data-wiz-donated ${wizardDonated(product) ? 'checked' : ''}>
+      </label>
+      <label class="price-input"><span data-wiz-price-label>Price at your store</span>
         <span class="input-prefix"><span>$</span><input type="number" min="0" step="0.01" inputmode="decimal"
           data-wiz-price="${esc(product.id)}" value="${valueAttr(value)}" placeholder="${product.price ?? ''}"></span>
       </label>
+      <p class="hint" data-wiz-donated-hint hidden>It won't cost anything on the shopping list. This value is shown as what the donation saved.</p>
       <p><button type="button" class="link" data-act="listed">Use the listed price</button></p>
       ${actions(
         `<button type="button" class="secondary" data-act="back">Back</button>`,
@@ -627,7 +720,11 @@ function renderWizard() {
       )}`;
   } else {
     const draft = applyWizardPrices(catalogue, settings.prices, wiz.answers);
-    const changed = wizardProducts(catalogue, wiz.menus).filter(({ product }) => Number.isFinite(draft[product.id]));
+    const all = wizardProducts(catalogue, wiz.menus);
+    const isDonated = ({ product }) => wizardDonated(product);
+    const changed = all.filter((e) => !isDonated(e) && Number.isFinite(draft[e.product.id]));
+    const gifts = all.filter(isDonated);
+    const priceOf = (product) => (Number.isFinite(draft[product.id]) ? draft[product.id] : product.price);
     html = `<div class="progress" aria-hidden="true"><span style="width:100%"></span></div>
       <h2 id="wizard-title">All done</h2>
       ${
@@ -638,12 +735,21 @@ function renderWizard() {
           .join('')}</ul>`
           : '<p>All your prices match the listed prices.</p>'
       }
+      ${
+        gifts.length
+          ? `<p>${gifts.length} donated:</p>
+        <ul class="changes">${gifts
+          .map(({ product }) => `<li>${esc(product.name)}, worth <strong>${money(priceOf(product))}</strong> a pack</li>`)
+          .join('')}</ul>`
+          : ''
+      }
       <p class="hint">Your prices are saved in this browser. You can change any of them under <strong>Recipe &amp; prices</strong>.</p>
       ${actions('<button type="button" class="secondary" data-act="back">Back</button>', '<button type="submit" class="primary">Save prices</button>')}`;
   }
 
   $('#wizard').innerHTML = `<form novalidate>${html}</form>`;
   const input = $('#wizard [data-wiz-price]');
+  if (input) wizardPriceWording($('#wizard [data-wiz-donated]').checked);
   if (input) {
     input.focus();
     input.select();
@@ -668,6 +774,10 @@ function wizardNext() {
     wiz.step += 1;
   } else {
     settings.prices = applyWizardPrices(catalogue, settings.prices, wiz.answers);
+    for (const [id, gift] of Object.entries(wiz.donated)) {
+      if (gift) settings.donated[id] = true;
+      else delete settings.donated[id];
+    }
     settings.wizardDone = true;
     settings.wizardMenus = wiz.menus;
     save();
@@ -681,6 +791,9 @@ function wizardNext() {
 
 function bindWizard() {
   const dlg = $('#wizard');
+  dlg.addEventListener('change', (e) => {
+    if (e.target.matches('[data-wiz-donated]')) wizardPriceWording(e.target.checked);
+  });
   dlg.addEventListener('submit', (e) => {
     e.preventDefault();
     wizardNext();
@@ -774,7 +887,7 @@ function bindInputs() {
     $(panel).addEventListener('input', (e) => {
       const t = e.target;
       const m = ms();
-      const { field, qty, sale, sold, stock } = t.dataset;
+      const { field, qty, sale, sold, stock, perItem } = t.dataset;
       const v = toNumber(t.value);
       const clamp = v == null || v < 0 ? null : v;
       if (field === 'planServes') m.planServes = nonNeg(t.value);
@@ -782,6 +895,7 @@ function bindInputs() {
       else if (field === 'restock.total') m.restock.total = nonNeg(t.value);
       else if (field === 'restock.sold') m.restock.sold = nonNeg(t.value);
       else if (qty) setOverride(m.items, qty, 'quantity', clamp);
+      else if (perItem) setOverride(m.items, perItem, 'perServe', clamp);
       else if (sale) setOverride(m.items, sale, 'salePrice', clamp);
       else if (sold) {
         if (clamp == null) delete m.restock.sold[sold];
@@ -810,6 +924,13 @@ function bindInputs() {
   });
 
   $('#price-table').addEventListener('input', (e) => {
+    const donatedId = e.target.dataset.donated;
+    if (donatedId) {
+      if (e.target.checked) settings.donated[donatedId] = true;
+      else delete settings.donated[donatedId];
+      changed();
+      return;
+    }
     const id = e.target.dataset.price;
     if (!id) return;
     const v = toNumber(e.target.value);

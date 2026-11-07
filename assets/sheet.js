@@ -42,10 +42,12 @@ function productRows(line) {
  * @param {number} [args.bufferPct]  (recipe kind)
  * @param {number} [args.salePrice]  per serve (recipe kind)
  * @param {boolean} [args.sells]     items kind: show sale price and takings
+ * @param {Array<{id:string,label:string,serves:number}>} [args.foodServes]
+ *   items kind: the food serves that per-serve lines (e.g. sauces) scale from
  * @param {(id:string)=>string} [args.storeName]
  * @returns {Array<Array<string|number>>}
  */
-export function buildSheet({ kind, mode, result, title, serveLabel = 'serves', serveNoun = 'serve', bufferPct = 0, salePrice = 0, sells = false, storeName = (s) => s ?? '' }) {
+export function buildSheet({ kind, mode, result, title, serveLabel = 'serves', serveNoun = 'serve', bufferPct = 0, salePrice = 0, sells = false, foodServes = [], storeName = (s) => s ?? '' }) {
   const restock = mode === 'restock';
   const rows = [[title]];
   const cell = {}; // named input cells, e.g. cell.serves = '$B$2'
@@ -67,14 +69,19 @@ export function buildSheet({ kind, mode, result, title, serveLabel = 'serves', s
     }
     input('buffer', 'Wastage buffer %', bufferPct);
     input('sale', `Sale price per ${serveNoun}`, salePrice);
-    cols = ['item', 'per', 'unit', 'need', ...(restock ? ['have'] : []), 'product', 'store', 'size', 'packs', 'price', 'cost'];
+    cols = ['item', 'per', 'unit', 'need', ...(restock ? ['have'] : []), 'product', 'store', 'size', 'packs', 'price', 'donated', 'cost', 'dvalue'];
   } else {
-    cols = ['item', ...(restock ? ['planned', 'sold', 'have', 'need'] : ['need']), 'unit', 'product', 'store', 'size', 'packs', 'price', 'cost', ...(sells ? ['sale', 'takings'] : [])];
+    const scaled = result.lines.some((l) => Number.isFinite(l.perServe));
+    if (scaled) {
+      for (const f of foodServes) input(`serves:${f.id}`, f.label, f.serves);
+      input('buffer', 'Wastage buffer %', bufferPct);
+    }
+    cols = ['item', ...(scaled ? ['per'] : []), ...(restock ? ['planned', 'sold', 'have', 'need'] : ['need']), 'unit', 'product', 'store', 'size', 'packs', 'price', 'donated', 'cost', 'dvalue', ...(sells ? ['sale', 'takings'] : [])];
   }
 
   const headers = {
     item: 'Item',
-    per: `Per ${serveNoun}`,
+    per: kind === 'items' ? 'Per serve' : `Per ${serveNoun}`,
     unit: 'Unit',
     need: restock ? 'Still needed' : kind === 'items' ? 'Quantity' : 'Need',
     planned: 'Planned',
@@ -85,7 +92,9 @@ export function buildSheet({ kind, mode, result, title, serveLabel = 'serves', s
     size: 'Pack size',
     packs: 'Packs',
     price: 'Price per pack',
+    donated: 'Donated?',
     cost: 'Cost',
+    dvalue: 'Donated value',
     sale: 'Sale price each',
     takings: 'Takings',
   };
@@ -107,6 +116,19 @@ export function buildSheet({ kind, mode, result, title, serveLabel = 'serves', s
           v.per = line.perServe;
           v.need = `=ROUND(${C.per}${r}*${cell.serves}*(1+${cell.buffer}/100),6)`;
           if (restock) v.have = round(line.onHand);
+        } else if (Number.isFinite(line.perServe)) {
+          // Scaled from the food serves cells at the top
+          const servesCells = (line.servesFrom || []).map((id) => cell[`serves:${id}`]).filter(Boolean);
+          const serves = servesCells.length ? servesCells.join('+') : 0;
+          v.per = line.perServe;
+          const formula = `=ROUND(${C.per}${r}*(${serves})*(1+${cell.buffer}/100),6)`;
+          if (restock) {
+            v.planned = formula;
+            v.have = round(line.onHand);
+            v.need = `=MAX(0,${C.planned}${r}-${C.sold}${r})`;
+          } else {
+            v.need = formula;
+          }
         } else if (restock) {
           v.planned = line.planned;
           v.sold = line.sold;
@@ -124,10 +146,15 @@ export function buildSheet({ kind, mode, result, title, serveLabel = 'serves', s
         v.product = product.name;
         v.store = storeName(product.store);
         v.size = product.packSize;
-        v.price = Number.isFinite(product.price) ? product.price : '';
+        // A donated product's price column holds what it would have cost
+        const price = product.donated ? product.value : product.price;
+        v.price = Number.isFinite(price) ? price : '';
+        v.donated = product.donated ? 'Yes' : '';
         const short = C.have ? `MAX(0,${C.need}${r}-${C.have}${r})` : `${C.need}${r}`;
         v.packs = live ? `=ROUNDUP(${short}/${C.size}${r},0)` : count;
-        v.cost = `=${C.packs}${r}*${C.price}${r}`;
+        const isDonated = `${C.donated}${r}="Yes"`;
+        v.cost = `=IF(${isDonated},0,${C.packs}${r}*${C.price}${r})`;
+        v.dvalue = `=IF(${isDonated},${C.packs}${r}*${C.price}${r},0)`;
       } else {
         v.product = 'No product listed';
       }
@@ -140,6 +167,7 @@ export function buildSheet({ kind, mode, result, title, serveLabel = 'serves', s
   rows.push([]);
   rows.push(['Shopping total', sum(C.cost)]);
   const totalCell = `B${rows.length}`;
+  rows.push(['Donations worth', sum(C.dvalue)]);
 
   if (kind === 'recipe') {
     if (!restock) rows.push([`Cost per ${serveNoun}`, `=IF(${cell.serves}>0,${totalCell}/${cell.serves},0)`]);

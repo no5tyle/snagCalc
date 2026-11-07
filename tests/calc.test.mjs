@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { cheapestPacks, calculate, calculateRestock, calculateItems, wizardProducts, applyWizardPrices } from '../assets/calc.js';
+import { cheapestPacks, calculate, calculateRestock, calculateItems, wizardProducts, applyWizardPrices, round2 } from '../assets/calc.js';
 
 const catalogue = JSON.parse(readFileSync(new URL('../data/catalogue.json', import.meta.url)));
 
@@ -51,10 +51,10 @@ test('calculate applies buffer and recipe overrides', () => {
     serves: 100,
     bufferPct: 10,
     store: 'drakes',
-    recipeOverrides: { bread: { perServe: 2 }, mustard: { enabled: true } },
+    recipeOverrides: { bread: { perServe: 2 }, onions: { enabled: false } },
   });
   assert.equal(r.lines.find((l) => l.id === 'bread').needed, 220);
-  assert.ok(r.lines.some((l) => l.id === 'mustard'));
+  assert.ok(!r.lines.some((l) => l.id === 'onions'));
   assert.ok(r.lines.every((l) => l.purchase.store === 'drakes'));
 });
 
@@ -179,4 +179,47 @@ test('applyWizardPrices sets changed prices and clears unchanged ones', () => {
     'not-a-product': 5,
   });
   assert.deepEqual(out, { 'ww-pepsi-24': 20, 'dk-slapes-bbq-1.5kg': 10.5 });
+});
+
+test('sauces are in consumables and scale from sausages plus sandwiches', () => {
+  for (const id of ['sausage-sizzle', 'egg-bacon']) {
+    assert.ok(!catalogue.menu[id].recipe.some((r) => ['tomato-sauce', 'bbq-sauce', 'mustard'].includes(r.ingredient)));
+  }
+  const r = calculateItems({ catalogue, menuId: 'consumables', servesByMenu: { 'sausage-sizzle': 200, 'egg-bacon': 100 }, bufferPct: 0 });
+  assert.equal(r.lines.find((l) => l.id === 'tomato-sauce').needed, 3000); // 10ml × 300
+  assert.equal(r.lines.find((l) => l.id === 'bbq-sauce').needed, 1500);
+  assert.equal(r.lines.find((l) => l.id === 'mustard').needed, 600); // sausages only
+  assert.equal(r.lines.find((l) => l.id === 'napkins').needed, 1000); // fixed quantity
+});
+
+test('per-serve consumables use the buffer and ignore the used count on restock', () => {
+  const r = calculateItems({
+    catalogue,
+    menuId: 'consumables',
+    servesByMenu: { 'sausage-sizzle': 100, 'egg-bacon': 0 },
+    bufferPct: 10,
+    sold: { 'tomato-sauce': 500 },
+    stock: { 'tomato-sauce': 300 },
+  });
+  const t = r.lines.find((l) => l.id === 'tomato-sauce');
+  assert.equal(t.needed, 1100);
+  assert.equal(t.shortfall, 800);
+  assert.equal(t.purchase.units, 1000);
+});
+
+test('donated products cost nothing and keep their value', () => {
+  const r = calculate({
+    catalogue,
+    menuId: 'sausage-sizzle',
+    serves: 200,
+    store: 'cheapest',
+    donated: { 'dk-slapes-bbq-1.5kg': true },
+    priceOverrides: { 'dk-slapes-bbq-1.5kg': 10.5 },
+  });
+  const s = r.lines.find((l) => l.id === 'sausages');
+  assert.equal(s.purchase.cost, 0);
+  assert.equal(s.purchase.donatedValue, 105); // 10 packs × $10.50
+  assert.equal(r.donatedValue, 105);
+  const normal = calculate({ catalogue, menuId: 'sausage-sizzle', serves: 200, store: 'cheapest' });
+  assert.equal(round2(normal.totalCost - r.totalCost), 110);
 });
