@@ -1,0 +1,116 @@
+{
+  "groupName": "Scout Group",
+  "stores": {
+    "woolworths": { "name": "Woolworths" },
+    "drakes": { "name": "Drakes" }
+  },
+  "ingredients": {
+    "sausages": {
+      "name": "Sausages",
+      "unit": "sausages",
+      "stockUnit": { "label": "sausages", "size": 1 },
+      "products": [
+        { "id": "ww-sausages-1kg", "store": "woolworths", "name": "Thin beef BBQ sausages 1kg", "packSize": 15, "packLabel": "1kg (~15 thin)", "price": 8.00, "stockcode": null, "url": null, "priceUpdated": null },
+        { "id": "ww-sausages-2kg", "store": "woolworths", "name": "Thin beef BBQ sausages 2kg", "packSize": 30, "packLabel": "2kg (~30 thin)", "price": 14.00, "stockcode": null, "url": null, "priceUpdated": null },
+        { "id": "dk-sausages-1kg", "store": "drakes", "name": "Thin beef BBQ sausages 1kg", "packSize": 15, "packLabel": "1kg (~15 thin)", "price": 8.50, "url": null, "priceUpdated": null },
+        { "id": "dk-sausages-2kg", "store": "drakes", "name": "Thin beef BBQ sausages 2kg", "packSize": 30, "packLabel": "2kg (~30 thin)", "price": 15.00, "url": null, "priceUpdated": null }
+      ]
+    },
+    "bread": {
+      "name": "Bread",
+      "unit": "slices",
+      "stockUnit": { "label": "loaves", "size": 20 },
+      "products": [
+        { "id": "ww-bread-white", "store": "woolworths", "name": "White sandwich bread 650g", "packSize": 20, "packLabel": "loaf (~20 usable slices)", "price": 2.00, "stockcode": null, "url": null, "priceUpdated": null },
+        { "id": "dk-bread-white", "store": "drakes", "name": "White sandwich bread 650g", "packSize": 20, "packLabel": "loaf (~20 usable slices)", "price": 2.20, "url": null, "priceUpdated": null }
+      ]
+    },
+    "onions": {
+      "name": "Brown onions",
+      "unit": "g",
+      "stockUnit": { "label": "kg", "size": 1000 },
+      "products": [
+        { "id": "ww-onions-1kg", "store": "woolworths", "name": "Brown onions 1kg bag", "packSize": 1000, "packLabel": "1kg bag", "price": 3.00, "stockcode": null, "url": null, "priceUpdated": null },
+        { "id": "ww-onions-2kg", "store": "woolworths", "name": "Brown onions 2kg bag", "packSize": 2000, "packLabel": "2kg bag", "price": 5.00, "stockcode": null, "url": null, "priceUpdated": null },
+        { "id": "dk-onions-1kg", "store": "drakes", "name": "Brown onions 1kg bag", "packSize": 1000, "packLabel": "1kg bag", "price": 3.20, "url": null, "priceUpdated": null },
+        { "id": "dk-onions-2kg", "store": "drakes", "name": "Brown onions 2kg bag", "packSize": 2000, "packLabel": "2kg bag", "price": 5.50, "url": null, "priceUpdated": null }
+      ]
+    },
+    "tomato-sauce": {
+      "name": "Tomato sauce",
+      "unit": "ml",
+      "stockUnit": { "label": "L", "size": 1000 },
+      "products": [
+        { "id": "ww-tomato-500", "store": "woolworths", "name": "Tomato sauce 500ml", "packSize": 500, "packLabel": "500ml bottle", "price": 2.00, "stockcode": null, "url": null, "priceUpdated": null },
+        { "id": "ww-tomato-2l", "store": "woolworths", "name": "Tomato sauce 2L", "packSize": 2000, "packLabel": "2L bottle", "price": 6.00, "stockcode": null, "url": null, "priceUpdated": null },
+        { "id": "dk-tomato-500", "store": "drakes", "name": "Tomato sauce 500ml", "packSize": 500, "packLabel": "500ml bottle", "price": 2.20, "url": null, "priceUpdated": null },
+        { "id": "dk-tomato-2l", "store": "drakes", "name": "Tomato sauce 2L", "packSize": 2000, "packLabel": "2L bottle", "price": 6.50, "url": null, "priceUpdated": null }
+      ]
+    },
+    "bbq-sauce": {
+      "name": "BBQ sauce",
+      "unit": "ml",
+      "stockUnit": { "label": "L", "size": 1000 },
+      "products": [
+        { "id": "ww-bbq-500", "store": "woolworths", "name": "BBQ sauce 500ml", "packSize": 500, "packLabel": "500ml bottle", "price": 2.00, "stockcode": null, "url": null, "priceUpdated": null },
+        { "id": "ww-bbq-2l", "store": "woolworths", "name": "BBQ sauce 2L", "packSize": 2000, "packLabel": "2L bottle", "price": 6.00, "stockcode": null, "url": null, "priceUpdated": null },
+        { "id": "dk-bbq-500", "store": "drakes", "name": "BBQ sauce 500ml", "packSize": 500, "packLabel": "500ml bottle", "price": 2.20, "url": null, "priceUpdated": null },
+        { "id": "dk-bbq-2l", "store": "drakes", "name": "BBQ sauce 2L", "packSize": 2000, "packLabel": "2L bottle", "price": 6.50, "url": null, "priceUpdated": null }
+      ]
+    },
+    "mustard": {
+      "name": "American mustard",
+      "unit": "g",
+      "stockUnit": { "label": "g", "size": 1 },
+      "products": [
+        { "id": "ww-mustard-500", "store": "woolworths", "name": "American mustard 500g", "packSize": 500, "packLabel": "500g bottle", "price": 3.00, "stockcode": null, "url": null, "priceUpdated": null },
+        { "id": "dk-mustard-500", "store": "drakes", "name": "American mustard 500g", "packSize": 500, "packLabel": "500g bottle", "price": 3.30, "url": null, "priceUpdated": null }
+      ]
+    },
+    "oil": {
+      "name": "Canola oil",
+      "unit": "ml",
+      "stockUnit": { "label": "L", "size": 1000 },
+      "products": [
+        { "id": "ww-oil-1l", "store": "woolworths", "name": "Canola oil 1L", "packSize": 1000, "packLabel": "1L bottle", "price": 4.50, "stockcode": null, "url": null, "priceUpdated": null },
+        { "id": "dk-oil-1l", "store": "drakes", "name": "Canola oil 1L", "packSize": 1000, "packLabel": "1L bottle", "price": 4.80, "url": null, "priceUpdated": null }
+      ]
+    },
+    "napkins": {
+      "name": "Napkins / serviettes",
+      "unit": "napkins",
+      "stockUnit": { "label": "napkins", "size": 1 },
+      "products": [
+        { "id": "ww-napkins-100", "store": "woolworths", "name": "Lunch napkins 100 pack", "packSize": 100, "packLabel": "100 pack", "price": 2.00, "stockcode": null, "url": null, "priceUpdated": null },
+        { "id": "dk-napkins-100", "store": "drakes", "name": "Lunch napkins 100 pack", "packSize": 100, "packLabel": "100 pack", "price": 2.30, "url": null, "priceUpdated": null }
+      ]
+    },
+    "gloves": {
+      "name": "Disposable food gloves",
+      "unit": "gloves",
+      "stockUnit": { "label": "gloves", "size": 1 },
+      "products": [
+        { "id": "ww-gloves-100", "store": "woolworths", "name": "Disposable gloves 100 pack", "packSize": 100, "packLabel": "100 pack", "price": 6.00, "stockcode": null, "url": null, "priceUpdated": null },
+        { "id": "dk-gloves-100", "store": "drakes", "name": "Disposable gloves 100 pack", "packSize": 100, "packLabel": "100 pack", "price": 6.50, "url": null, "priceUpdated": null }
+      ]
+    }
+  },
+  "menu": {
+    "sausage-sizzle": {
+      "name": "Sausage sizzle",
+      "serveLabel": "sausages",
+      "defaultSalePrice": 3.00,
+      "recipe": [
+        { "ingredient": "sausages", "perServe": 1, "enabled": true, "note": "1 sausage per serve" },
+        { "ingredient": "bread", "perServe": 1, "enabled": true, "note": "1 slice per sausage" },
+        { "ingredient": "onions", "perServe": 15, "enabled": true, "note": "~1 medium onion per 10 sausages" },
+        { "ingredient": "tomato-sauce", "perServe": 10, "enabled": true, "note": "~2 teaspoons per serve" },
+        { "ingredient": "bbq-sauce", "perServe": 5, "enabled": true, "note": "fewer people take BBQ sauce" },
+        { "ingredient": "mustard", "perServe": 3, "enabled": false, "note": "optional" },
+        { "ingredient": "oil", "perServe": 2, "enabled": true, "note": "for the hotplate and onions" },
+        { "ingredient": "napkins", "perServe": 1, "enabled": true, "note": "1 per serve" },
+        { "ingredient": "gloves", "perServe": 0.05, "enabled": false, "note": "about 1 glove per 20 serves" }
+      ]
+    }
+  }
+}

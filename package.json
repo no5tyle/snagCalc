@@ -1,0 +1,15 @@
+{
+  "name": "snagcalc",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Fundraising sausage sizzle (BBQ) shopping and restock calculator",
+  "type": "module",
+  "scripts": {
+    "test": "node --test tests/*.test.mjs",
+    "start": "python3 -m http.server 8000",
+    "update-prices": "node scripts/update-prices.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
