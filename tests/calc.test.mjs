@@ -35,7 +35,7 @@ test('cheapestPacks handles unpriced products by minimising packs', () => {
 });
 
 test('calculate: 200 sausages needs 200 slices of bread (10 loaves)', () => {
-  const r = calculate({ catalogue, menuId: 'sausage-sizzle', serves: 200, store: 'woolworths' });
+  const r = calculate({ catalogue, menuId: 'sausage-sizzle', serves: 200, store: 'cheapest' });
   const bread = r.lines.find((l) => l.id === 'bread');
   assert.equal(bread.needed, 200);
   assert.equal(bread.purchase.units, 200);
@@ -56,6 +56,14 @@ test('calculate applies buffer and recipe overrides', () => {
   assert.equal(r.lines.find((l) => l.id === 'bread').needed, 220);
   assert.ok(r.lines.some((l) => l.id === 'mustard'));
   assert.ok(r.lines.every((l) => l.purchase.store === 'drakes'));
+});
+
+test('sausages come from Slapes 1.5kg packs of 21 at Drakes', () => {
+  const r = calculate({ catalogue, menuId: 'sausage-sizzle', serves: 200, store: 'cheapest' });
+  const s = r.lines.find((l) => l.id === 'sausages');
+  assert.equal(s.purchase.store, 'drakes');
+  assert.equal(s.purchase.units, 210); // 10 packs of 21
+  assert.equal(s.purchase.cost, 110);
 });
 
 test('cheapest mode picks one store per ingredient', () => {
@@ -84,7 +92,7 @@ test('restock subtracts sales and stock on hand', () => {
     totalDesired: 400,
     sold: 180,
     stock: { sausages: 40, bread: 60 },
-    store: 'woolworths',
+    store: 'cheapest',
   });
   assert.equal(r.remainingServes, 220);
   const s = r.lines.find((l) => l.id === 'sausages');

@@ -10,10 +10,7 @@
       "unit": "sausages",
       "stockUnit": { "label": "sausages", "size": 1 },
       "products": [
-        { "id": "ww-sausages-1kg", "store": "woolworths", "name": "Thin beef BBQ sausages 1kg", "packSize": 15, "packLabel": "1kg (~15 thin)", "price": 8.00, "stockcode": null, "url": null, "priceUpdated": null },
-        { "id": "ww-sausages-2kg", "store": "woolworths", "name": "Thin beef BBQ sausages 2kg", "packSize": 30, "packLabel": "2kg (~30 thin)", "price": 14.00, "stockcode": null, "url": null, "priceUpdated": null },
-        { "id": "dk-sausages-1kg", "store": "drakes", "name": "Thin beef BBQ sausages 1kg", "packSize": 15, "packLabel": "1kg (~15 thin)", "price": 8.50, "url": null, "priceUpdated": null },
-        { "id": "dk-sausages-2kg", "store": "drakes", "name": "Thin beef BBQ sausages 2kg", "packSize": 30, "packLabel": "2kg (~30 thin)", "price": 15.00, "url": null, "priceUpdated": null }
+        { "id": "dk-slapes-bbq-1.5kg", "store": "drakes", "name": "Slape & Sons Traditional BBQ Sausages 21 pack 1.5kg", "packSize": 21, "packLabel": "1.5kg (21 sausages)", "price": 11.00, "url": null, "priceUpdated": "2026-11-07" }
       ]
     },
     "bread": {
@@ -21,8 +18,7 @@
       "unit": "slices",
       "stockUnit": { "label": "loaves", "size": 20 },
       "products": [
-        { "id": "ww-bread-white", "store": "woolworths", "name": "White sandwich bread 650g", "packSize": 20, "packLabel": "loaf (~20 usable slices)", "price": 2.00, "stockcode": null, "url": null, "priceUpdated": null },
-        { "id": "dk-bread-white", "store": "drakes", "name": "White sandwich bread 650g", "packSize": 20, "packLabel": "loaf (~20 usable slices)", "price": 2.20, "url": null, "priceUpdated": null }
+        { "id": "ww-bread-white", "store": "woolworths", "name": "Woolworths White Soft Sandwich Bread 650g", "packSize": 20, "packLabel": "loaf (~20 usable slices)", "price": 2.80, "stockcode": "581172", "url": null, "priceUpdated": "2026-11-07" }
       ]
     },
     "onions": {
