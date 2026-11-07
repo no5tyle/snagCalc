@@ -322,6 +322,12 @@ input[type=checkbox].switch:checked::after { transform: translateX(20px); }
 
 .switch-row { flex-direction: row; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 14px; border-radius: var(--radius); background: var(--surface-2); color: var(--text); cursor: pointer; }
 
+/* Quick picks beside a field, e.g. 50% / 75% / 100% */
+.pct-field { display: flex; flex-direction: column; gap: 8px; }
+.chip-row { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { min-height: 36px; padding: 0.25rem 0.9rem; border: 0; border-radius: 999px; background: var(--fill); color: var(--text); font: inherit; font-size: .9rem; font-weight: 500; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.chip[aria-pressed=true] { background: var(--tint); color: var(--primary-text); }
+
 .donated-check { flex-direction: row; align-items: center; gap: 6px; margin-top: 6px; color: var(--text-2); font-size: .9rem; cursor: pointer; }
 
 /* Totals as tiles: a muted label over a large bold figure */
@@ -385,8 +391,14 @@ input[type=checkbox].switch:checked::after { transform: translateX(20px); }
 
 /* Price wizard: a rounded sheet over a dimmed page */
 dialog.wizard {
+  /* Placed by fitWizard() within the visible area, which shrinks when the keyboard opens */
+  position: fixed;
+  inset: 12px 0 auto 0;
+  margin: 0 auto;
   width: min(520px, calc(100vw - 24px));
   max-height: calc(100dvh - 24px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
   padding: 0;
   border: 0;
   border-radius: 1.75rem;
@@ -411,6 +423,24 @@ dialog.wizard::backdrop { background: rgba(0, 0, 0, 0.35); -webkit-backdrop-filt
 .wizard .wizard-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; }
 .wizard .wizard-actions .right { display: flex; gap: 8px; margin-left: auto; }
 .wizard ul.changes { max-height: 40vh; margin: 0; padding-left: 20px; overflow: auto; }
+
+/* With the keyboard open there's little room, so tighten everything up */
+.wizard.compact form { gap: 8px; padding: 14px 16px; }
+.wizard.compact .product-name { font-size: 1.125rem; line-height: 1.2; }
+.wizard.compact h2 { font-size: 1.125rem; }
+.wizard.compact .progress { height: 4px; }
+.wizard.compact .step-count, .wizard.compact .sub { font-size: .8rem; }
+.wizard.compact .listed { padding: 6px 10px; font-size: .9rem; }
+.wizard.compact .listed .sub { display: inline; margin-left: 4px; }
+.wizard.compact .switch-row { padding: 6px 10px; }
+.wizard.compact .switch-row .sub { display: none; }
+.wizard.compact .price-input input { min-height: 40px; font-size: 1.35rem; }
+.wizard.compact .hint { font-size: .8rem; margin: 0; }
+.wizard.compact .wizard-actions button { min-height: 40px; }
+/* If it still has to scroll, keep Back / Next in view at the bottom */
+dialog.wizard.compact { scroll-padding-bottom: 64px; }
+.wizard.compact .wizard-actions { position: sticky; bottom: 0; margin: 0 -16px -14px; padding: 8px 16px 14px; background: var(--surface); }
+.wizard.compact ul.changes { max-height: 30vh; }
 @media print { dialog.wizard { display: none !important; } }
 
 /* Text fields match the number fields */

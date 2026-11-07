@@ -77,13 +77,21 @@ test('sheet formulas recalculate when the serves cell changes', () => {
 
 test('sausage restock sheet matches the app', () => {
   const result = calculateRestock({
-    catalogue, menuId: 'sausage-sizzle', totalDesired: 400, sold: 180, bufferPct: 5, store: 'cheapest',
-    stock: { sausages: 40, bread: 60 },
+    catalogue, menuId: 'sausage-sizzle', sold: 300, day2Pct: 50, bufferPct: 5, store: 'cheapest',
+    stock: { sausages: 100, bread: 60 },
   });
   const rows = buildSheet({ kind: 'recipe', mode: 'restock', result, title: 'Test', serveLabel: 'sausages', serveNoun: 'sausage', bufferPct: 5, salePrice: 3 });
   const v = evaluate(rows);
+  near(labelled(rows, v, 'Sausages expected on day 2'), 150);
   near(labelled(rows, v, 'Shopping total'), result.totalCost);
-  near(labelled(rows, v, 'Takings for the rest of the event'), 220 * 3);
+  near(labelled(rows, v, 'Takings on day 2'), 150 * 3);
+  // Changing the % in the sheet recalculates
+  rows[rows.findIndex((r) => r[0] === 'Day 2 sales, % of day 1')][1] = 80;
+  const more = calculateRestock({
+    catalogue, menuId: 'sausage-sizzle', sold: 300, day2Pct: 80, bufferPct: 5, store: 'cheapest',
+    stock: { sausages: 100, bread: 60 },
+  });
+  near(labelled(rows, evaluate(rows), 'Shopping total'), more.totalCost);
 });
 
 test('drinks sheet includes sale prices and takings', () => {
@@ -95,10 +103,28 @@ test('drinks sheet includes sale prices and takings', () => {
 });
 
 test('consumables restock sheet matches the app', () => {
-  const result = calculateItems({ catalogue, menuId: 'consumables', store: 'cheapest', sold: { napkins: 400 }, stock: { napkins: 300 } });
-  const rows = buildSheet({ kind: 'items', mode: 'restock', result, title: 'Consumables', sells: false });
+  // Day 1: 300 sausages and 100 sandwiches; day 2 expects 50% of that
+  const day1 = { 'sausage-sizzle': 300, 'egg-bacon': 100 };
+  const day2 = { 'sausage-sizzle': 150, 'egg-bacon': 50 };
+  const result = calculateItems({
+    catalogue, menuId: 'consumables', store: 'cheapest', day2Pct: 50, bufferPct: 5, servesByMenu: day2,
+    sold: { napkins: 400 }, stock: { napkins: 100, 'tomato-sauce': 600 },
+  });
+  const foodServes = [
+    { id: 'sausage-sizzle', label: 'Sausages sold on day 1', serves: day1['sausage-sizzle'] },
+    { id: 'egg-bacon', label: 'Sandwiches sold on day 1', serves: day1['egg-bacon'] },
+  ];
+  const rows = buildSheet({ kind: 'items', mode: 'restock', result, title: 'Consumables', sells: false, day2Pct: 50, bufferPct: 5, foodServes });
   near(labelled(rows, evaluate(rows), 'Shopping total'), result.totalCost);
-  assert.ok(!rows.some((r) => r[0] === 'Takings for the rest of the event'));
+  assert.ok(!rows.some((r) => r[0] === 'Takings on day 2'));
+});
+
+test('drinks restock sheet scales day 1 sales by the day 2 %', () => {
+  const result = calculateItems({ catalogue, menuId: 'drinks', store: 'cheapest', day2Pct: 50, sold: { pepsi: 40, solo: 25 }, stock: { pepsi: 8 } });
+  const rows = buildSheet({ kind: 'items', mode: 'restock', result, title: 'Drinks', sells: true, day2Pct: 50 });
+  const v = evaluate(rows);
+  near(labelled(rows, v, 'Shopping total'), result.totalCost);
+  near(labelled(rows, v, 'Takings on day 2'), result.revenue);
 });
 
 test('toTSV separates cells with tabs and strips tabs and newlines from text', () => {

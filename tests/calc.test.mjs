@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { cheapestPacks, calculate, calculateRestock, calculateItems, wizardProducts, applyWizardPrices, round2, withCustomItems } from '../assets/calc.js';
+import { cheapestPacks, calculate, calculateRestock, calculateItems, wizardProducts, applyWizardPrices, round2, withCustomItems, expectedDay2, recipeUsage, itemsUsage, leftoverEstimate } from '../assets/calc.js';
 
 const catalogue = JSON.parse(readFileSync(new URL('../data/catalogue.json', import.meta.url)));
 
@@ -85,39 +85,57 @@ test('price overrides are used', () => {
   assert.equal(r.lines.find((l) => l.id === 'bread').purchase.cost, 10);
 });
 
-test('restock subtracts sales and stock on hand', () => {
+test('day 2 restock: 400 bought, 300 sold, half the sales expected means 50 more', () => {
   const r = calculateRestock({
     catalogue,
     menuId: 'sausage-sizzle',
-    totalDesired: 400,
-    sold: 180,
-    stock: { sausages: 40, bread: 60 },
+    sold: 300,
+    day2Pct: 50,
+    stock: { sausages: 100, bread: 40 },
     store: 'cheapest',
   });
-  assert.equal(r.remainingServes, 220);
+  assert.equal(r.expectedServes, 150);
   const s = r.lines.find((l) => l.id === 'sausages');
-  assert.equal(s.shortfall, 180);
-  assert.ok(s.purchase.units >= 180);
-  const b = r.lines.find((l) => l.id === 'bread');
-  assert.equal(b.shortfall, 160);
+  assert.equal(s.needed, 150);
+  assert.equal(s.shortfall, 50);
+  assert.equal(s.purchase.units, 63); // 3 packs of 21
+  assert.equal(r.lines.find((l) => l.id === 'bread').shortfall, 110);
 });
 
-test('restock buys nothing when stock already covers the remainder', () => {
+test('day 2 restock applies the wastage buffer to the expected sales', () => {
+  const r = calculateRestock({ catalogue, menuId: 'sausage-sizzle', sold: 300, day2Pct: 50, bufferPct: 10, stock: { sausages: 100 } });
+  assert.equal(r.lines.find((l) => l.id === 'sausages').shortfall, 65); // 165 - 100
+});
+
+test('day 2 restock rounds expected sales up to whole serves', () => {
+  assert.equal(expectedDay2(7, 33), 3); // 2.31
+  assert.equal(expectedDay2(300, 50), 150);
+  assert.equal(expectedDay2(0, 80), 0);
+  assert.equal(expectedDay2(100, 0), 0);
+});
+
+test('day 2 restock buys nothing when leftovers cover the expected sales', () => {
   const r = calculateRestock({
     catalogue,
     menuId: 'sausage-sizzle',
-    totalDesired: 100,
     sold: 90,
-    stock: { sausages: 50, bread: 50, onions: 5000, 'tomato-sauce': 5000, 'bbq-sauce': 5000, oil: 1000, napkins: 100, mustard: 2000 },
+    day2Pct: 100,
+    stock: { sausages: 100, bread: 100, onions: 5000, oil: 1000 },
   });
   assert.equal(r.totalCost, 0);
   assert.ok(r.lines.every((l) => l.purchase.packs.length === 0));
 });
 
-test('restock never goes negative when sales exceed target', () => {
-  const r = calculateRestock({ catalogue, menuId: 'sausage-sizzle', totalDesired: 100, sold: 150 });
-  assert.equal(r.remainingServes, 0);
-  assert.equal(r.totalCost, 0);
+test('leftoverEstimate: what the plan bought minus what day 1 used', () => {
+  const plan = calculate({ catalogue, menuId: 'sausage-sizzle', serves: 400, store: 'cheapest' });
+  const used = recipeUsage(catalogue, 'sausage-sizzle', {}, 300);
+  assert.equal(used.sausages, 300);
+  assert.equal(used.bread, 300);
+  const left = leftoverEstimate(plan, used);
+  assert.equal(left.sausages, plan.lines.find((l) => l.id === 'sausages').purchase.units - 300);
+  assert.equal(left.onions, plan.lines.find((l) => l.id === 'onions').purchase.units - 4500);
+  // Never negative
+  assert.equal(leftoverEstimate(plan, { sausages: 10000 }).sausages, 0);
 });
 
 test('items: drinks use their own quantities and sale prices', () => {
@@ -130,12 +148,26 @@ test('items: drinks use their own quantities and sale prices', () => {
   assert.equal(r.revenue, 30 * 2.5 + others);
 });
 
-test('items: restock subtracts sold/used and stock left over', () => {
-  const r = calculateItems({ catalogue, menuId: 'consumables', sold: { napkins: 400 }, stock: { napkins: 300 } });
-  const n = r.lines.find((l) => l.id === 'napkins');
-  assert.equal(n.needed, 600);
-  assert.equal(n.shortfall, 300);
-  assert.equal(n.purchase.units, 300);
+test('items: day 2 restock scales day 1 sales and uses leftovers first', () => {
+  const r = calculateItems({ catalogue, menuId: 'drinks', day2Pct: 50, sold: { pepsi: 40 }, stock: { pepsi: 8 } });
+  const p = r.lines.find((l) => l.id === 'pepsi');
+  assert.equal(p.needed, 20); // half of 40
+  assert.equal(p.shortfall, 12);
+  assert.equal(p.purchase.units, 24);
+  assert.equal(r.revenue, 20 * 2); // only lines with day 1 sales expect day 2 sales
+});
+
+test('items: plan mode ignores sold counts', () => {
+  const r = calculateItems({ catalogue, menuId: 'consumables', sold: { napkins: 400 } });
+  assert.equal(r.lines.find((l) => l.id === 'napkins').needed, 1000);
+});
+
+test('itemsUsage: counts for fixed items, per serve for sauces', () => {
+  const used = itemsUsage(catalogue, 'consumables', {}, { napkins: 350 }, { 'sausage-sizzle': 300, 'egg-bacon': 50 });
+  assert.equal(used.napkins, 350);
+  assert.equal(used['tomato-sauce'], 3500); // 10ml × 350
+  assert.equal(used.mustard, 900); // 3g × 300 sausages only
+  assert.equal(used.gloves, 0);
 });
 
 test('items: disabled items are left out', () => {
@@ -192,12 +224,13 @@ test('sauces are in consumables and scale from sausages plus sandwiches', () => 
   assert.equal(r.lines.find((l) => l.id === 'napkins').needed, 1000); // fixed quantity
 });
 
-test('per-serve consumables use the buffer and ignore the used count on restock', () => {
+test('per-serve consumables use the buffer and day 2 serves on restock', () => {
   const r = calculateItems({
     catalogue,
     menuId: 'consumables',
-    servesByMenu: { 'sausage-sizzle': 100, 'egg-bacon': 0 },
+    servesByMenu: { 'sausage-sizzle': 100, 'egg-bacon': 0 }, // day 2's expected serves
     bufferPct: 10,
+    day2Pct: 50,
     sold: { 'tomato-sauce': 500 },
     stock: { 'tomato-sauce': 300 },
   });

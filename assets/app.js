@@ -1,6 +1,10 @@
 import {
   calculate,
   calculateRestock,
+  expectedDay2,
+  recipeUsage,
+  itemsUsage,
+  leftoverEstimate,
   calculateItems,
   effectiveRecipe,
   effectiveItems,
@@ -41,7 +45,7 @@ function defaultMenuSettings(id) {
   return {
     salePrice: m.defaultSalePrice ?? 3,
     planServes: serves,
-    restock: { total: serves * 2, sold: 0, stock: {} },
+    restock: { sold: 0, stock: {} },
     recipe: {},
   };
 }
@@ -58,7 +62,7 @@ function ms(id = settings.menu) {
 // ---------- Settings ----------
 
 function defaultSettings() {
-  return { store: 'cheapest', buffer: 5, prices: {}, donated: {}, customItems: [], menu: menuIds()[0], view: 'plan', menus: {}, wizardDone: false, wizardMenus: null };
+  return { store: 'cheapest', buffer: 5, prices: {}, donated: {}, customItems: [], day2Pct: 100, menu: menuIds()[0], view: 'plan', menus: {}, wizardDone: false, wizardMenus: null };
 }
 
 function readJSON(key) {
@@ -162,7 +166,7 @@ function statsFor(result, restock) {
   if (result.donatedValue > 0) stats.push(['Donations worth', money(result.donatedValue)]);
   if (isItems()) {
     if (!menuDef().sells) return stats;
-    stats.push([restock ? 'Takings for the rest' : 'Takings if all sell', money(result.revenue)]);
+    stats.push([restock ? 'Takings on day 2' : 'Takings if all sell', money(result.revenue)]);
     if (!restock) stats.push(['Profit if all sell', money(result.revenue - result.totalCost)]);
     return stats;
   }
@@ -174,21 +178,27 @@ function statsFor(result, restock) {
     stats.push(['Profit if all sell', money(revenue - result.totalCost)]);
   }
   if (restock) {
-    stats.push([`${cap(serveLabel())} still to sell`, num(result.remainingServes, 0)]);
-    stats.push([`Takings at ${money(sale)} each`, money(result.remainingServes * sale)]);
+    stats.push([`${cap(serveLabel())} expected on day 2`, num(result.expectedServes, 0)]);
+    stats.push([`Day 2 takings at ${money(sale)} each`, money(result.expectedServes * sale)]);
   }
   return stats;
 }
 
 const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
 
-function resultsCard(result, { restock = false, title }) {
+function resultsCard(result, { restock = false, title, counted = {} }) {
   const rows = result.lines
     .map(
       (l) => `<tr>
         <td class="item"><strong>${esc(l.ingredient.name)}</strong></td>
         <td class="num" data-label="Need"><div>${fmtQty(l.needed, l.ingredient)}</div></td>
-        ${restock ? `<td class="num" data-label="Have"><div>${fmtQty(l.onHand, l.ingredient)}</div></td>` : ''}
+        ${
+          restock
+            ? `<td class="num" data-label="Have"><div>${fmtQty(l.onHand, l.ingredient)}${
+                l.id in counted ? '' : '<span class="sub">estimated</span>'
+              }</div></td>`
+            : ''
+        }
         <td data-label="Buy"><div>${buyCell(l)}</div></td>
         <td class="num" data-label="Cost"><div>${money(l.purchase.cost)}${
           l.purchase.donatedValue > 0
@@ -237,15 +247,31 @@ function stockInBaseUnits(stock) {
 /** Food menus (sausages, egg & bacon): the ones sauces and other per-serve consumables scale from. */
 const foodMenuIds = () => menuIds().filter((id) => !isItems(id));
 
-/** Food serves per menu: planned, or still to sell for a restock. */
+/** Food serves per menu: 'plan' (planned), 'day1' (sold on day 1) or 'restock' (expected on day 2). */
 function servesByMenu(mode) {
   const out = {};
   for (const id of foodMenuIds()) {
     const m = ms(id);
-    out[id] = mode === 'restock' ? Math.max(0, (m.restock.total ?? 0) - (m.restock.sold ?? 0)) : m.planServes ?? 0;
+    const sold = m.restock.sold ?? 0;
+    out[id] = mode === 'restock' ? expectedDay2(sold, settings.day2Pct) : mode === 'day1' ? sold : m.planServes ?? 0;
   }
   return out;
 }
+
+/**
+ * Stock left after day 1 in base units: what the Plan tab bought minus what
+ * day 1 used, unless someone has counted it.
+ */
+function leftoverEstimates() {
+  const m = ms();
+  const used = isItems()
+    ? itemsUsage(catalogue, settings.menu, m.items, m.restock.sold, servesByMenu('day1'))
+    : recipeUsage(catalogue, settings.menu, m.recipe, m.restock.sold);
+  return leftoverEstimate(planResult(), used);
+}
+
+const countedStock = () => stockInBaseUnits(ms().restock.stock);
+const restockStock = () => ({ ...leftoverEstimates(), ...countedStock() });
 
 /** Whether the current items menu has lines scaled from food serves. */
 const hasScaledItems = (id = settings.menu) =>
@@ -262,7 +288,7 @@ function itemsResult(mode) {
     donated: settings.donated,
     servesByMenu: servesByMenu(mode),
     bufferPct: settings.buffer,
-    ...(mode === 'restock' ? { sold: m.restock.sold, stock: stockInBaseUnits(m.restock.stock) } : {}),
+    ...(mode === 'restock' ? { sold: m.restock.sold, stock: restockStock(), day2Pct: settings.day2Pct } : {}),
   });
 }
 
@@ -292,17 +318,18 @@ function restockResult() {
     recipeOverrides: m.recipe,
     priceOverrides: settings.prices,
     donated: settings.donated,
-    totalDesired: m.restock.total,
     sold: m.restock.sold,
-    stock: stockInBaseUnits(m.restock.stock),
+    day2Pct: settings.day2Pct,
+    stock: restockStock(),
   });
 }
 
 function sheetText(result, mode, title) {
-  const serves = servesByMenu(mode);
+  // For a restock the sheet takes day 1 sales and scales them by the day 2 % itself
+  const serves = servesByMenu(mode === 'restock' ? 'day1' : 'plan');
   const foodServes = foodMenuIds().map((id) => ({
     id,
-    label: `${cap(serveLabel(id))} ${mode === 'restock' ? 'still to sell' : 'to sell'}`,
+    label: `${cap(serveLabel(id))} ${mode === 'restock' ? 'sold on day 1' : 'to sell'}`,
     serves: serves[id],
   }));
   return toTSV(
@@ -317,6 +344,7 @@ function sheetText(result, mode, title) {
       salePrice: ms().salePrice,
       sells: Boolean(menuDef().sells),
       foodServes,
+      day2Pct: settings.day2Pct,
       storeName,
     })
   );
@@ -343,20 +371,24 @@ function renderRestockResults() {
   const result = restockResult();
   const menu = menuDef();
   let heading;
+  const pct = num(settings.day2Pct, 0);
   if (isItems()) {
     $('#restock-summary').textContent = '';
-    heading = `Snag Calc restock – ${menu.name}`;
+    heading = `Snag Calc – ${menu.name}, day 2 restock (${pct}% of day 1)`;
   } else {
-    const pct = result.totalDesired ? Math.round((result.sold / result.totalDesired) * 100) : 0;
     const label = serveLabel();
-    $('#restock-summary').textContent =
-      result.sold > result.totalDesired
-        ? `Sold ${num(result.sold, 0)}, already more than the ${num(result.totalDesired, 0)} target.`
-        : `Sold ${num(result.sold, 0)} of ${num(result.totalDesired, 0)} (${pct}%). ${num(result.remainingServes, 0)} ${label} still to sell.`;
-    heading = `Snag Calc restock – ${num(result.remainingServes, 0)} ${label} to go`;
+    $('#restock-summary').textContent = `Day 2: expect ${num(result.expectedServes, 0)} ${label} (${pct}% of ${num(result.sold, 0)}).`;
+    heading = `Snag Calc – day 2 restock, ${num(result.expectedServes, 0)} ${label}`;
+  }
+  // Show this run's leftover estimates as placeholders until someone counts
+  const estimates = leftoverEstimates();
+  for (const input of document.querySelectorAll('#restock-inputs [data-stock]')) {
+    const ing = catalogue.ingredients[input.dataset.stock];
+    const est = (estimates[input.dataset.stock] ?? 0) / (ing?.stockUnit?.size ?? 1);
+    input.placeholder = `${num(est, 1)} (est.)`;
   }
   const el = $('#restock-results');
-  el.innerHTML = resultsCard(result, { restock: true, title: `${menu.name}: restock shopping list` });
+  el.innerHTML = resultsCard(result, { restock: true, title: `${menu.name}: day 2 shopping list`, counted: countedStock() });
   wireActions(el, {
     list: () => shoppingListText(result, heading),
     sheet: () => sheetText(result, 'restock', heading),
@@ -440,22 +472,36 @@ function renderPlanInputs() {
       .join('')}</div>`;
 }
 
+/** The day 2 % field, shared by every tab, with quick picks. */
+function day2PctField() {
+  return `<div class="pct-field">
+    <label>Day 2 sales, % of day 1
+      <span class="input-suffix"><input data-field="day2Pct" type="number" min="0" step="5" inputmode="numeric" value="${valueAttr(settings.day2Pct)}"><span>%</span></span>
+    </label>
+    <div class="chip-row" role="group" aria-label="Quick picks">${[50, 75, 100]
+      .map((p) => `<button type="button" class="chip" data-pct="${p}" aria-pressed="${settings.day2Pct === p}">${p}%</button>`)
+      .join('')}</div>
+  </div>`;
+}
+
+const LEFTOVER_HINT =
+  'Left over is worked out from what the Plan tab bought, minus what day 1 used. Count what’s really left and type it in to replace an estimate.';
+
 function renderRestockInputs() {
   const m = ms();
   if (!isItems()) {
     const label = serveLabel();
     const recipe = effectiveRecipe(catalogue, settings.menu, m.recipe).filter((r) => r.enabled);
-    $('#restock-inputs').innerHTML = `<p class="hint">At the end of day 1, count what's left and enter it below. Snag Calc works out what to buy for the rest of the event.</p>
+    $('#restock-inputs').innerHTML = `<p class="hint">After day 1, enter how many sold and how busy you expect day 2 to be. Snag Calc works out what to buy for day 2, using up what’s left first.</p>
       <div class="grid-2">
-        <label>Total ${esc(label)} wanted (whole event)
-          <input data-field="restock.total" type="number" min="0" step="10" inputmode="numeric" value="${valueAttr(m.restock.total)}">
-        </label>
-        <label>${esc(cap(label))} sold so far
+        <label>${esc(cap(label))} sold on day 1
           <input data-field="restock.sold" type="number" min="0" step="1" inputmode="numeric" value="${valueAttr(m.restock.sold)}">
         </label>
+        ${day2PctField()}
       </div>
       <p id="restock-summary" class="summary"></p>
       <h3>Stock left over</h3>
+      <p class="hint">${LEFTOVER_HINT}</p>
       <div class="stock-grid">${recipe
         .map((r) => {
           const ing = catalogue.ingredients[r.ingredient];
@@ -471,14 +517,15 @@ function renderRestockInputs() {
   }
   const items = effectiveItems(catalogue, settings.menu, m.items).filter((r) => r.enabled);
   const scaled = items.some((r) => Number.isFinite(r.perServe));
-  $('#restock-inputs').innerHTML = `<p class="hint">At the end of day 1, enter how many of each you've ${
-    menuDef().sells ? 'sold' : 'used'
-  } and how many are left. Snag Calc buys enough to reach the quantities on the Plan tab.${
+  const did = menuDef().sells ? 'sold' : 'used';
+  $('#restock-inputs').innerHTML = `<p class="hint">After day 1, enter how many of each were ${did} and how busy you expect day 2 to be. Snag Calc works out what to buy for day 2, using up what’s left first.${
     scaled
-      ? ` Sauces are worked out from what's still to sell on the other tabs' Restock: <strong>${esc(foodServesText('restock'))}</strong>, so just enter what's left.`
+      ? ` Sauces follow day 2’s expected sausages and sandwiches (from day 1 sales on their Restock tabs): <strong>${esc(foodServesText('restock'))}</strong>.`
       : ''
   }</p>
+    <div class="grid-2">${day2PctField()}</div>
     <p id="restock-summary" class="summary"></p>
+    <p class="hint">${LEFTOVER_HINT}</p>
     <div class="item-grid">${items
       .map((r) => {
         const ing = catalogue.ingredients[r.ingredient];
@@ -492,7 +539,7 @@ function renderRestockInputs() {
           ${
             perServe
               ? '<span aria-hidden="true"></span>'
-              : `<label>${menuDef().sells ? 'Sold' : 'Used'}
+              : `<label>${cap(did)} on day 1
             <span class="input-suffix"><input type="number" min="0" step="1" inputmode="numeric" data-sold="${esc(r.ingredient)}"
               value="${valueAttr(m.restock.sold[r.ingredient])}" placeholder="0"><span>${esc(ing.unit)}</span></span>
           </label>`
@@ -761,6 +808,30 @@ function openWizard() {
     if (typeof dlg.showModal === 'function') dlg.showModal();
     else dlg.setAttribute('open', '');
   }
+  fitWizard();
+}
+
+/**
+ * Keep the wizard inside the part of the screen that's visible, which shrinks
+ * when the phone's keyboard opens (the visual viewport). It's centred in that
+ * space, switches to a compact layout when space is short, and scrolls within
+ * itself if it still doesn't fit.
+ */
+function fitWizard() {
+  const dlg = $('#wizard');
+  if (!dlg?.open) return;
+  const vv = window.visualViewport;
+  const height = vv ? vv.height : window.innerHeight;
+  const top = vv ? vv.offsetTop : 0;
+  const gap = height < 560 ? 6 : 12;
+  dlg.classList.toggle('compact', height < 640);
+  dlg.style.maxHeight = `${Math.max(200, height - gap * 2)}px`;
+  dlg.style.top = `${top + Math.max(gap, (height - dlg.offsetHeight) / 2)}px`;
+  // Keep the field being typed in clear of the pinned buttons
+  const active = document.activeElement;
+  if (active?.matches?.('input') && dlg.contains(active) && dlg.scrollHeight > dlg.clientHeight) {
+    active.scrollIntoView({ block: 'nearest' });
+  }
 }
 
 function closeWizard() {
@@ -876,13 +947,15 @@ function renderWizard() {
   }
 
   $('#wizard').innerHTML = `<form novalidate>${html}</form>`;
+  $('#wizard').scrollTop = 0;
   const input = $('#wizard [data-wiz-price]');
   if (input) wizardPriceWording($('#wizard [data-wiz-donated]').checked);
+  fitWizard();
   if (input) {
-    input.focus();
+    input.focus({ preventScroll: true });
     input.select();
   } else {
-    $('#wizard button[type=submit]')?.focus();
+    $('#wizard button[type=submit]')?.focus({ preventScroll: true });
   }
 }
 
@@ -955,6 +1028,18 @@ function bindWizard() {
     wiz = null;
   });
   for (const btn of document.querySelectorAll('[data-open-wizard]')) btn.addEventListener('click', openWizard);
+  // The keyboard opening or closing changes the visible area
+  window.visualViewport?.addEventListener('resize', fitWizard);
+  window.visualViewport?.addEventListener('scroll', fitWizard);
+  window.addEventListener('resize', fitWizard);
+  // Keep the field being typed in visible above the keyboard
+  dlg.addEventListener('focusin', (e) => {
+    if (!e.target.matches('input')) return;
+    setTimeout(() => {
+      fitWizard();
+      e.target.scrollIntoView({ block: 'nearest' });
+    }, 300);
+  });
 }
 
 // ---------- Views ----------
@@ -972,6 +1057,12 @@ function selectView(name) {
 // ---------- Init ----------
 
 const nonNeg = (v) => Math.max(0, toNumber(v) ?? 0);
+
+function syncPctChips() {
+  for (const c of document.querySelectorAll('#restock-inputs [data-pct]')) {
+    c.setAttribute('aria-pressed', String(Number(c.dataset.pct) === settings.day2Pct));
+  }
+}
 
 function setOverride(map, id, key, value) {
   const o = { ...map[id] };
@@ -1020,8 +1111,11 @@ function bindInputs() {
       const clamp = v == null || v < 0 ? null : v;
       if (field === 'planServes') m.planServes = nonNeg(t.value);
       else if (field === 'salePrice') m.salePrice = nonNeg(t.value);
-      else if (field === 'restock.total') m.restock.total = nonNeg(t.value);
       else if (field === 'restock.sold') m.restock.sold = nonNeg(t.value);
+      else if (field === 'day2Pct') {
+        settings.day2Pct = nonNeg(t.value);
+        syncPctChips();
+      }
       else if (qty) setOverride(m.items, qty, 'quantity', clamp);
       else if (perItem) setOverride(m.items, perItem, 'perServe', clamp);
       else if (sale) setOverride(m.items, sale, 'salePrice', clamp);
@@ -1049,6 +1143,15 @@ function bindInputs() {
       const v = toNumber(e.target.value);
       setOverride(m.recipe, per, 'perServe', v == null || v < 0 ? null : v);
     } else return;
+    changed();
+  });
+
+  $('#restock-inputs').addEventListener('click', (e) => {
+    const chip = e.target.closest('[data-pct]');
+    if (!chip) return;
+    settings.day2Pct = Number(chip.dataset.pct);
+    $('#restock-inputs [data-field=day2Pct]').value = settings.day2Pct;
+    syncPctChips();
     changed();
   });
 

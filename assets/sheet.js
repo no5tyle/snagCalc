@@ -43,11 +43,13 @@ function productRows(line) {
  * @param {number} [args.salePrice]  per serve (recipe kind)
  * @param {boolean} [args.sells]     items kind: show sale price and takings
  * @param {Array<{id:string,label:string,serves:number}>} [args.foodServes]
- *   items kind: the food serves that per-serve lines (e.g. sauces) scale from
+ *   items kind: the food serves that per-serve lines (e.g. sauces) scale from;
+ *   for a restock, each food tab's day 1 sales
+ * @param {number} [args.day2Pct]    restock: day 2's expected sales as a % of day 1's
  * @param {(id:string)=>string} [args.storeName]
  * @returns {Array<Array<string|number>>}
  */
-export function buildSheet({ kind, mode, result, title, serveLabel = 'serves', serveNoun = 'serve', bufferPct = 0, salePrice = 0, sells = false, foodServes = [], storeName = (s) => s ?? '' }) {
+export function buildSheet({ kind, mode, result, title, serveLabel = 'serves', serveNoun = 'serve', bufferPct = 0, salePrice = 0, sells = false, foodServes = [], day2Pct = 100, storeName = (s) => s ?? '' }) {
   const restock = mode === 'restock';
   const rows = [[title]];
   const cell = {}; // named input cells, e.g. cell.serves = '$B$2'
@@ -60,9 +62,9 @@ export function buildSheet({ kind, mode, result, title, serveLabel = 'serves', s
   if (kind === 'recipe') {
     const cap = serveLabel.charAt(0).toUpperCase() + serveLabel.slice(1);
     if (restock) {
-      input('total', `${cap} wanted (whole event)`, result.totalDesired);
-      input('sold', `${cap} sold so far`, result.sold);
-      rows.push([`${cap} still to sell`, `=MAX(0,${cell.total}-${cell.sold})`]);
+      input('sold', `${cap} sold on day 1`, result.sold);
+      input('pct', 'Day 2 sales, % of day 1', result.day2Pct ?? day2Pct);
+      rows.push([`${cap} expected on day 2`, `=ROUNDUP(${cell.sold}*${cell.pct}/100,0)`]);
       cell.serves = `$B$${rows.length}`;
     } else {
       input('serves', `${cap} to sell`, result.serves);
@@ -72,20 +74,20 @@ export function buildSheet({ kind, mode, result, title, serveLabel = 'serves', s
     cols = ['item', 'per', 'unit', 'need', ...(restock ? ['have'] : []), 'product', 'store', 'size', 'packs', 'price', 'donated', 'cost', 'dvalue'];
   } else {
     const scaled = result.lines.some((l) => Number.isFinite(l.perServe));
+    if (restock) input('pct', 'Day 2 sales, % of day 1', day2Pct);
     if (scaled) {
       for (const f of foodServes) input(`serves:${f.id}`, f.label, f.serves);
       input('buffer', 'Wastage buffer %', bufferPct);
     }
-    cols = ['item', ...(scaled ? ['per'] : []), ...(restock ? ['planned', 'sold', 'have', 'need'] : ['need']), 'unit', 'product', 'store', 'size', 'packs', 'price', 'donated', 'cost', 'dvalue', ...(sells ? ['sale', 'takings'] : [])];
+    cols = ['item', ...(scaled ? ['per'] : []), ...(restock ? ['sold', 'need', 'have'] : ['need']), 'unit', 'product', 'store', 'size', 'packs', 'price', 'donated', 'cost', 'dvalue', ...(sells ? ['sale', 'takings'] : [])];
   }
 
   const headers = {
     item: 'Item',
     per: kind === 'items' ? 'Per serve' : `Per ${serveNoun}`,
     unit: 'Unit',
-    need: restock ? 'Still needed' : kind === 'items' ? 'Quantity' : 'Need',
-    planned: 'Planned',
-    sold: 'Sold / used',
+    need: restock ? (kind === 'items' ? 'Day 2 expected' : 'Day 2 need') : kind === 'items' ? 'Quantity' : 'Need',
+    sold: sells ? 'Sold on day 1' : 'Used on day 1',
     have: 'Have',
     product: 'Product',
     store: 'Store',
@@ -118,22 +120,17 @@ export function buildSheet({ kind, mode, result, title, serveLabel = 'serves', s
           if (restock) v.have = round(line.onHand);
         } else if (Number.isFinite(line.perServe)) {
           // Scaled from the food serves cells at the top
+          // For a restock the cells hold day 1 sales, scaled to day 2 here
           const servesCells = (line.servesFrom || []).map((id) => cell[`serves:${id}`]).filter(Boolean);
-          const serves = servesCells.length ? servesCells.join('+') : 0;
+          const terms = restock ? servesCells.map((c) => `ROUNDUP(${c}*${cell.pct}/100,0)`) : servesCells;
+          const serves = terms.length ? terms.join('+') : 0;
           v.per = line.perServe;
-          const formula = `=ROUND(${C.per}${r}*(${serves})*(1+${cell.buffer}/100),6)`;
-          if (restock) {
-            v.planned = formula;
-            v.have = round(line.onHand);
-            v.need = `=MAX(0,${C.planned}${r}-${C.sold}${r})`;
-          } else {
-            v.need = formula;
-          }
+          v.need = `=ROUND(${C.per}${r}*(${serves})*(1+${cell.buffer}/100),6)`;
+          if (restock) v.have = round(line.onHand);
         } else if (restock) {
-          v.planned = line.planned;
           v.sold = line.sold;
           v.have = round(line.onHand);
-          v.need = `=MAX(0,${C.planned}${r}-${C.sold}${r})`;
+          v.need = `=ROUNDUP(${C.sold}${r}*${cell.pct}/100,0)`;
         } else {
           v.need = line.planned;
         }
@@ -171,10 +168,10 @@ export function buildSheet({ kind, mode, result, title, serveLabel = 'serves', s
 
   if (kind === 'recipe') {
     if (!restock) rows.push([`Cost per ${serveNoun}`, `=IF(${cell.serves}>0,${totalCell}/${cell.serves},0)`]);
-    rows.push([restock ? 'Takings for the rest of the event' : 'Takings if all sell', `=${cell.serves}*${cell.sale}`]);
+    rows.push([restock ? 'Takings on day 2' : 'Takings if all sell', `=${cell.serves}*${cell.sale}`]);
     if (!restock) rows.push(['Profit if all sell', `=B${rows.length}-${totalCell}`]);
   } else if (sells) {
-    rows.push([restock ? 'Takings for the rest of the event' : 'Takings if all sell', sum(C.takings)]);
+    rows.push([restock ? 'Takings on day 2' : 'Takings if all sell', sum(C.takings)]);
     if (!restock) rows.push(['Profit if all sell', `=B${rows.length}-${totalCell}`]);
   }
   return rows;

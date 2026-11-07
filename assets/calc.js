@@ -220,12 +220,13 @@ export function effectiveItems(catalogue, menuId, overrides = {}) {
  * Lines with `perServe` (e.g. sauces) are the exception: they are scaled from
  * the food serves in `servesByMenu` ({ [menuId]: serves }), counting the menus
  * listed in the line's `servesFrom` (all of them if it has none), plus the
- * wastage buffer. Their sold/used count is ignored, since a restock passes the
- * serves still to sell.
+ * wastage buffer. Their sold/used count is ignored, since a restock passes
+ * day 2's expected serves.
  *
- * For a restock, pass `sold` (sold or used so far) and `stock` (left over),
- * both { [ingredientId]: number } in base units. Each line then needs
- * planned - sold, and buys whatever stock doesn't cover.
+ * For a day 2 restock, pass `day2Pct`, `sold` (sold or used on day 1) and
+ * `stock` (left over), both { [ingredientId]: number } in base units. Each
+ * line then needs day2Pct% of its day 1 count, and buys whatever stock
+ * doesn't cover. Scaled lines use `servesByMenu` as day 2's expected serves.
  *
  * Revenue is quantity × salePrice for lines still to sell.
  */
@@ -240,7 +241,9 @@ export function calculateItems({
   donated = {},
   servesByMenu = {},
   bufferPct = 0,
+  day2Pct = null,
 }) {
+  const restock = day2Pct != null;
   const storeIds = Object.keys(catalogue.stores);
   const factor = 1 + Math.max(0, Number(bufferPct) || 0) / 100;
   const lines = effectiveItems(catalogue, menuId, itemOverrides)
@@ -253,7 +256,7 @@ export function calculateItems({
       const serves = servesFrom.reduce((sum, id) => sum + Math.max(0, Number(servesByMenu[id]) || 0), 0);
       const planned = scaled ? roundQty(serves * r.perServe * factor) : Math.max(0, Number(r.quantity) || 0);
       const soldQty = scaled ? 0 : Math.max(0, Number(sold[r.ingredient]) || 0);
-      const needed = roundQty(Math.max(0, planned - soldQty));
+      const needed = scaled ? planned : restock ? expectedDay2(soldQty, day2Pct) : planned;
       const onHand = Math.max(0, Number(stock[r.ingredient]) || 0);
       const shortfall = roundQty(Math.max(0, needed - onHand));
       const products = pricedProducts(ingredient.products, priceOverrides, donated);
@@ -278,15 +281,59 @@ export function calculateItems({
   return { lines, revenue, ...totals(lines) };
 }
 
+/** Day 2's expected sales: day 1's, scaled by a percentage, in whole units. */
+export const expectedDay2 = (soldDay1, day2Pct) =>
+  Math.max(0, Math.ceil((Math.max(0, Number(soldDay1) || 0) * Math.max(0, Number(day2Pct) || 0)) / 100 - 1e-9));
+
 /**
- * Restock: total serves desired across the whole event, minus what has been
- * sold so far, compared against stock remaining.
+ * Restock for day 2 of an event: day 2 is expected to sell `day2Pct`% of
+ * what day 1 sold (`sold`), and stock left over (`stock`, base units) is
+ * used first. E.g. 300 sold on day 1 at 50% means 150 expected on day 2;
+ * with 100 left, 50 more are needed (plus the wastage buffer).
  */
-export function calculateRestock({ totalDesired, sold, ...rest }) {
-  const total = Math.max(0, Number(totalDesired) || 0);
+export function calculateRestock({ sold, day2Pct = 100, ...rest }) {
   const soldClean = Math.max(0, Number(sold) || 0);
-  const remainingServes = Math.max(0, total - soldClean);
-  return { totalDesired: total, sold: soldClean, remainingServes, ...calculate({ ...rest, serves: remainingServes }) };
+  const pct = Math.max(0, Number(day2Pct) || 0);
+  const expectedServes = expectedDay2(soldClean, pct);
+  return { sold: soldClean, day2Pct: pct, expectedServes, ...calculate({ ...rest, serves: expectedServes }) };
+}
+
+/** Amount of each ingredient a number of serves uses, without the buffer. */
+export function recipeUsage(catalogue, menuId, recipeOverrides = {}, serves = 0) {
+  const out = {};
+  for (const r of effectiveRecipe(catalogue, menuId, recipeOverrides)) {
+    if (r.enabled) out[r.ingredient] = roundQty(Math.max(0, Number(serves) || 0) * r.perServe);
+  }
+  return out;
+}
+
+/**
+ * Amount of each item used on day 1: the sold/used count for fixed items,
+ * and per serve × day 1 food serves for scaled ones (e.g. sauces).
+ */
+export function itemsUsage(catalogue, menuId, itemOverrides = {}, used = {}, servesByMenu = {}) {
+  const out = {};
+  for (const r of effectiveItems(catalogue, menuId, itemOverrides)) {
+    if (!r.enabled) continue;
+    if (Number.isFinite(r.perServe)) {
+      const from = r.servesFrom ?? Object.keys(servesByMenu);
+      const serves = from.reduce((sum, id) => sum + Math.max(0, Number(servesByMenu[id]) || 0), 0);
+      out[r.ingredient] = roundQty(serves * r.perServe);
+    } else {
+      out[r.ingredient] = Math.max(0, Number(used[r.ingredient]) || 0);
+    }
+  }
+  return out;
+}
+
+/**
+ * What should be left after day 1: what the plan bought, minus what day 1
+ * used. A starting point for the restock until someone counts the stock.
+ */
+export function leftoverEstimate(planResult, used = {}) {
+  const out = {};
+  for (const l of planResult.lines) out[l.id] = roundQty(Math.max(0, l.purchase.units - (Number(used[l.id]) || 0)));
+  return out;
 }
 
 /**
