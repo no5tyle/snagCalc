@@ -149,6 +149,38 @@
       "products": [
         { "id": "ww-water-24", "store": "woolworths", "name": "Water 24 pack", "packSize": 24, "packLabel": "24 bottles", "price": 9.40, "stockcode": null, "url": null, "priceUpdated": "2026-11-07" }
       ]
+    },
+    "coca-cola": {
+      "name": "Coca-Cola",
+      "unit": "cans",
+      "stockUnit": { "label": "cans", "size": 1 },
+      "products": [
+        { "id": "ww-coca-cola-24", "store": "woolworths", "name": "Coca-Cola 24 pack", "packSize": 24, "packLabel": "24 cans", "price": 30.00, "stockcode": null, "url": null, "priceUpdated": null }
+      ]
+    },
+    "coke-no-sugar": {
+      "name": "Coke No Sugar",
+      "unit": "cans",
+      "stockUnit": { "label": "cans", "size": 1 },
+      "products": [
+        { "id": "ww-coke-no-sugar-24", "store": "woolworths", "name": "Coke No Sugar 24 pack", "packSize": 24, "packLabel": "24 cans", "price": 30.00, "stockcode": null, "url": null, "priceUpdated": null }
+      ]
+    },
+    "sprite": {
+      "name": "Sprite",
+      "unit": "cans",
+      "stockUnit": { "label": "cans", "size": 1 },
+      "products": [
+        { "id": "ww-sprite-24", "store": "woolworths", "name": "Sprite 24 pack", "packSize": 24, "packLabel": "24 cans", "price": 30.00, "stockcode": null, "url": null, "priceUpdated": null }
+      ]
+    },
+    "fanta": {
+      "name": "Fanta",
+      "unit": "cans",
+      "stockUnit": { "label": "cans", "size": 1 },
+      "products": [
+        { "id": "ww-fanta-24", "store": "woolworths", "name": "Fanta 24 pack", "packSize": 24, "packLabel": "24 cans", "price": 30.00, "stockcode": null, "url": null, "priceUpdated": null }
+      ]
     }
   },
   "menu": {
@@ -189,11 +221,16 @@
       "kind": "items",
       "sells": true,
       "recipe": [
+        { "ingredient": "coca-cola", "quantity": 24, "salePrice": 2.00, "enabled": false },
+        { "ingredient": "coke-no-sugar", "quantity": 24, "salePrice": 2.00, "enabled": false },
         { "ingredient": "pepsi", "quantity": 24, "salePrice": 2.00, "enabled": true },
         { "ingredient": "pepsi-max", "quantity": 24, "salePrice": 2.00, "enabled": true },
+        { "ingredient": "sprite", "quantity": 24, "salePrice": 2.00, "enabled": false },
+        { "ingredient": "fanta", "quantity": 24, "salePrice": 2.00, "enabled": false },
         { "ingredient": "solo", "quantity": 30, "salePrice": 2.00, "enabled": true },
         { "ingredient": "water", "quantity": 48, "salePrice": 2.00, "enabled": true }
-      ]
+      ],
+      "allowCustom": true
     },
     "consumables": {
       "name": "Consumables",

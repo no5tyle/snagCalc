@@ -292,18 +292,18 @@ export function calculateRestock({ totalDesired, sold, ...rest }) {
 /**
  * Products to ask about in the price wizard, for the chosen menus.
  * Ordered by menu then recipe order, each product once, with the menus
- * that use it. Includes items that are switched off, since they can be
- * switched back on later.
+ * that use it. `include(menuId, ingredientId)` can leave items out (e.g.
+ * ones switched off); by default every item is included.
  * @returns {Array<{ product: object, ingredient: object, ingredientId: string, menus: string[] }>}
  */
-export function wizardProducts(catalogue, menuIds = Object.keys(catalogue.menu)) {
+export function wizardProducts(catalogue, menuIds = Object.keys(catalogue.menu), include = () => true) {
   const byId = new Map();
   for (const menuId of menuIds) {
     const menu = catalogue.menu[menuId];
     if (!menu) continue;
     for (const r of menu.recipe) {
       const ingredient = catalogue.ingredients[r.ingredient];
-      if (!ingredient) continue;
+      if (!ingredient || !include(menuId, r.ingredient)) continue;
       for (const product of ingredient.products) {
         const entry = byId.get(product.id);
         if (entry) {
@@ -331,4 +331,47 @@ export function applyWizardPrices(catalogue, overrides, answers) {
     else out[id] = round2(v);
   }
   return out;
+}
+
+/**
+ * Add the user's own items (e.g. drinks not in the catalogue) to a copy of
+ * the catalogue, so every calculation treats them like built-in ones.
+ *
+ * Each item: { id, menu, name, unit, packSize, price, store, quantity?, salePrice? }.
+ * Items with an unknown menu or store, or no pack size, are skipped. Their
+ * prices were entered by the user, so they're marked `custom` rather than
+ * shown as estimates.
+ */
+export function withCustomItems(catalogue, items = []) {
+  const ingredients = { ...catalogue.ingredients };
+  const menu = { ...catalogue.menu };
+  for (const it of items || []) {
+    const m = menu[it?.menu];
+    const packSize = Number(it?.packSize);
+    if (!m || !it.id || ingredients[it.id] || !catalogue.stores[it.store] || !(packSize > 0)) continue;
+    const unit = it.unit || 'items';
+    ingredients[it.id] = {
+      name: it.name || 'Drink',
+      unit,
+      stockUnit: { label: unit, size: 1 },
+      custom: true,
+      products: [
+        {
+          id: `${it.id}-pack`,
+          store: it.store,
+          name: `${it.name || 'Drink'} ${packSize} pack`,
+          packSize,
+          packLabel: `${packSize} ${unit}`,
+          price: Number.isFinite(Number(it.price)) && it.price !== '' && it.price != null ? Number(it.price) : null,
+          url: null,
+          priceUpdated: null,
+          custom: true,
+        },
+      ],
+    };
+    const line = { ingredient: it.id, quantity: Math.max(0, Number(it.quantity) || 0), enabled: true, custom: true };
+    if (m.sells) line.salePrice = Math.max(0, Number(it.salePrice) || 0);
+    menu[it.menu] = { ...m, recipe: [...m.recipe, line] };
+  }
+  return { ...catalogue, ingredients, menu };
 }

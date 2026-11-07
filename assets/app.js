@@ -6,6 +6,7 @@ import {
   effectiveItems,
   wizardProducts,
   applyWizardPrices,
+  withCustomItems,
 } from './calc.js';
 import { buildSheet, toTSV } from './sheet.js';
 
@@ -21,7 +22,8 @@ const num = (n, dp = 2) => Number(n.toFixed(dp)).toLocaleString('en-AU');
 const toNumber = (v) => (v === '' || v == null ? null : Number(v));
 const valueAttr = (v) => (Number.isFinite(v) ? v : '');
 
-let catalogue;
+let baseCatalogue; // data/catalogue.json as loaded
+let catalogue; // baseCatalogue plus the user's own items (see rebuildCatalogue)
 let settings;
 
 // ---------- Menus ----------
@@ -56,7 +58,7 @@ function ms(id = settings.menu) {
 // ---------- Settings ----------
 
 function defaultSettings() {
-  return { store: 'cheapest', buffer: 5, prices: {}, donated: {}, menu: menuIds()[0], view: 'plan', menus: {}, wizardDone: false, wizardMenus: null };
+  return { store: 'cheapest', buffer: 5, prices: {}, donated: {}, customItems: [], menu: menuIds()[0], view: 'plan', menus: {}, wizardDone: false, wizardMenus: null };
 }
 
 function readJSON(key) {
@@ -72,7 +74,7 @@ function loadSettings() {
   const base = defaultSettings();
   const saved = readJSON(STORAGE_KEY);
   if (saved) {
-    const s = { ...base, ...saved, menus: saved.menus || {}, donated: saved.donated || {} };
+    const s = { ...base, ...saved, menus: saved.menus || {}, donated: saved.donated || {}, customItems: Array.isArray(saved.customItems) ? saved.customItems : [] };
     if (!catalogue.menu[s.menu]) s.menu = base.menu;
     if (!VIEWS.includes(s.view)) s.view = 'plan';
     return s;
@@ -191,7 +193,7 @@ function resultsCard(result, { restock = false, title }) {
         <td class="num" data-label="Cost"><div>${money(l.purchase.cost)}${
           l.purchase.donatedValue > 0
             ? `<span class="sub">donated, worth ${money(l.purchase.donatedValue)}</span>`
-            : l.purchase.packs.some(({ product }) => !product.priceUpdated && !product.overridden && !product.donated)
+            : l.purchase.packs.some(({ product }) => !product.priceUpdated && !product.overridden && !product.donated && !product.custom)
               ? '<span class="sub"><span class="badge-estimate">estimate</span></span>'
               : ''
         }</div></td>
@@ -399,7 +401,11 @@ function renderPlanInputs() {
   const items = effectiveItems(catalogue, settings.menu, m.items).filter((r) => r.enabled);
   const scaled = items.some((r) => Number.isFinite(r.perServe));
   const hint = menu.sells
-    ? 'How many of each do you want to sell? Set the sale price for each one too.'
+    ? `How many of each do you want to sell? Set the sale price for each one too.${
+        menu.allowCustom
+          ? ` <button type="button" class="link" data-goto-choose>Choose ${esc(menu.name.toLowerCase())} or add your own</button>`
+          : ''
+      }`
     : `${
         scaled
           ? `Sauces are worked out from your plans on the other tabs: <strong>${esc(foodServesText())}</strong>. Set how much each one uses. `
@@ -503,8 +509,11 @@ function renderRestockInputs() {
 function renderRecipeTable() {
   const m = ms();
   if (isItems()) {
-    $('#recipe-title').textContent = 'Items';
-    $('#recipe-hint').textContent = "Untick anything you don't need. Set quantities on the Plan tab.";
+    const custom = Boolean(menuDef().allowCustom);
+    $('#recipe-title').textContent = custom ? `Choose ${menuDef().name.toLowerCase()}` : 'Items';
+    $('#recipe-hint').textContent = custom
+      ? `Tick the ${menuDef().name.toLowerCase()} you're selling, or add your own below. Set how many on the Plan tab.`
+      : "Untick anything you don't need. Set quantities on the Plan tab.";
     const items = effectiveItems(catalogue, settings.menu, m.items);
     $('#recipe-table').innerHTML = `<thead><tr><th>Use</th><th>Item</th><th>Notes</th></tr></thead>
       <tbody>${items
@@ -513,12 +522,18 @@ function renderRecipeTable() {
           return `<tr>
             <td><input type="checkbox" data-enable="${esc(r.ingredient)}" ${r.enabled ? 'checked' : ''} aria-label="Use ${esc(ing.name)}"></td>
             <td>${esc(ing.name)}</td>
-            <td class="sub">${esc(r.note ?? '')}</td>
+            <td class="sub">${
+              r.custom
+                ? `Added by you <button type="button" class="link danger" data-remove-custom="${esc(r.ingredient)}">Remove</button>`
+                : esc(r.note ?? '')
+            }</td>
           </tr>`;
         })
         .join('')}</tbody>`;
+    renderCustomForm();
     return;
   }
+  $('#custom-items').innerHTML = '';
   const noun = serveNoun();
   $('#recipe-title').textContent = `Recipe (per ${noun})`;
   $('#recipe-hint').textContent = `Untick the items you don't need, or change how much each ${noun} uses.`;
@@ -537,8 +552,113 @@ function renderRecipeTable() {
       .join('')}</tbody>`;
 }
 
+// ---------- The user's own items (e.g. drinks) ----------
+
+function rebuildCatalogue() {
+  catalogue = withCustomItems(baseCatalogue, settings.customItems);
+}
+
+function renderCustomForm() {
+  const menu = menuDef();
+  if (!menu.allowCustom) {
+    $('#custom-items').innerHTML = '';
+    return;
+  }
+  const noun = menu.name.toLowerCase().replace(/s$/, '');
+  const stores = Object.entries(catalogue.stores)
+    .map(([id, st]) => `<option value="${esc(id)}">${esc(st.name)}</option>`)
+    .join('');
+  $('#custom-items').innerHTML = `<form class="custom-form" novalidate>
+    <h3>Add a ${esc(noun)}</h3>
+    <div class="custom-grid">
+      <label class="wide">Name
+        <input type="text" name="name" required maxlength="60" placeholder="e.g. Lift, iced tea, juice boxes" autocomplete="off">
+      </label>
+      <label>Comes in
+        <select name="unit"><option value="cans">Cans</option><option value="bottles">Bottles</option><option value="poppers">Poppers</option></select>
+      </label>
+      <label>How many in a pack
+        <input type="number" name="packSize" min="1" step="1" inputmode="numeric" value="24" required>
+      </label>
+      <label>Pack price
+        <span class="input-prefix"><span>$</span><input type="number" name="price" min="0" step="0.01" inputmode="decimal" required placeholder="0.00"></span>
+      </label>
+      <label>Store
+        <select name="store">${stores}</select>
+      </label>
+      ${
+        menu.sells
+          ? `<label>Sale price each
+        <span class="input-prefix"><span>$</span><input type="number" name="salePrice" min="0" step="0.5" inputmode="decimal" value="2"></span>
+      </label>`
+          : ''
+      }
+      <label>How many to ${menu.sells ? 'sell' : 'get'}
+        <input type="number" name="quantity" min="0" step="1" inputmode="numeric" value="24">
+      </label>
+    </div>
+    <p class="notice" data-custom-error hidden></p>
+    <div class="actions"><button type="submit" class="primary">Add ${esc(noun)}</button></div>
+  </form>`;
+}
+
+function addCustomItem(form) {
+  const f = new FormData(form);
+  const name = String(f.get('name') || '').trim();
+  const packSize = toNumber(f.get('packSize'));
+  const price = toNumber(f.get('price'));
+  const error = !name
+    ? 'Give it a name.'
+    : !(packSize >= 1)
+      ? 'Enter how many come in a pack.'
+      : price == null || !(price >= 0)
+        ? 'Enter the pack price.'
+        : '';
+  if (error) {
+    const el = form.querySelector('[data-custom-error]');
+    el.textContent = error;
+    el.hidden = false;
+    return;
+  }
+  const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 30) || 'item';
+  settings.customItems.push({
+    id: `custom-${slug}-${Date.now().toString(36)}`,
+    menu: settings.menu,
+    name,
+    unit: String(f.get('unit') || 'cans'),
+    packSize: Math.round(packSize),
+    price,
+    store: String(f.get('store')),
+    quantity: Math.max(0, toNumber(f.get('quantity')) ?? 0),
+    salePrice: Math.max(0, toNumber(f.get('salePrice')) ?? 0),
+  });
+  save();
+  rebuildCatalogue();
+  renderMenu();
+  $('#custom-items [name=name]')?.focus();
+}
+
+function removeCustomItem(id) {
+  const item = settings.customItems.find((it) => it.id === id);
+  if (!item || !confirm(`Remove ${item.name}?`)) return;
+  settings.customItems = settings.customItems.filter((it) => it.id !== id);
+  const productId = `${id}-pack`;
+  delete settings.prices[productId];
+  delete settings.donated[productId];
+  for (const m of Object.values(settings.menus)) {
+    if (m.items) delete m.items[id];
+    if (m.restock?.sold) delete m.restock.sold[id];
+    if (m.restock?.stock) delete m.restock.stock[id];
+  }
+  save();
+  rebuildCatalogue();
+  renderMenu();
+}
+
 function renderPriceTable() {
-  const ids = [...new Set(menuDef().recipe.map((r) => r.ingredient))];
+  // A menu you can add to (drinks) offers more than you'll sell, so only list the ones ticked
+  const lines = menuDef().allowCustom ? menuDef().recipe.filter((r) => isOn(settings.menu, r.ingredient)) : menuDef().recipe;
+  const ids = [...new Set(lines.map((r) => r.ingredient))];
   let rows = '';
   for (const id of ids) {
     for (const p of catalogue.ingredients[id].products) {
@@ -547,7 +667,7 @@ function renderPriceTable() {
         <td>${esc(p.name)}<span class="sub">${esc(p.packLabel)}</span></td>
         <td>${esc(storeName(p.store))}</td>
         <td class="num">${money(p.price)}<span class="sub">${
-          p.priceUpdated ? `checked ${esc(p.priceUpdated)}` : '<span class="badge-estimate">estimate</span>'
+          p.custom ? 'added by you' : p.priceUpdated ? `checked ${esc(p.priceUpdated)}` : '<span class="badge-estimate">estimate</span>'
         }</span></td>
         <td class="your-price"><span class="input-prefix"><span>$</span><input type="number" min="0" step="0.01" data-price="${esc(p.id)}"
           value="${valueAttr(override)}" placeholder="${p.price ?? ''}" aria-label="Your price for ${esc(p.name)} at ${esc(storeName(p.store))}"></span>
@@ -658,6 +778,12 @@ function wizardValue(product) {
   return Number.isFinite(settings.prices[product.id]) ? settings.prices[product.id] : product.price;
 }
 
+/** Whether an item is switched on in a menu (the wizard skips ones that are off). */
+function isOn(menuId, ingredientId) {
+  const list = isItems(menuId) ? effectiveItems(catalogue, menuId, ms(menuId).items) : effectiveRecipe(catalogue, menuId, ms(menuId).recipe);
+  return list.some((r) => r.ingredient === ingredientId && r.enabled);
+}
+
 const wizardDonated = (product) => (product.id in wiz.donated ? wiz.donated[product.id] : Boolean(settings.donated[product.id]));
 
 function recordWizardAnswer() {
@@ -692,7 +818,9 @@ function renderWizard() {
     const { product, menus } = wiz.items[wiz.step - 1];
     const value = wizardValue(product);
     const override = settings.prices[product.id];
-    const listedNote = product.priceUpdated
+    const listedNote = product.custom
+      ? `Your price <strong>${money(product.price)}</strong>, added by you`
+      : product.priceUpdated
       ? `Listed price <strong>${money(product.price)}</strong>, checked ${esc(fmtDate(product.priceUpdated))}`
       : `Estimate <strong>${money(product.price)}</strong> <span class="badge-estimate">not checked yet</span>`;
     html = `<div class="progress" aria-hidden="true"><span style="width:${Math.round(((wiz.step - 1) / n) * 100)}%"></span></div>
@@ -720,7 +848,7 @@ function renderWizard() {
       )}`;
   } else {
     const draft = applyWizardPrices(catalogue, settings.prices, wiz.answers);
-    const all = wizardProducts(catalogue, wiz.menus);
+    const all = wizardProducts(catalogue, wiz.menus, isOn);
     const isDonated = ({ product }) => wizardDonated(product);
     const changed = all.filter((e) => !isDonated(e) && Number.isFinite(draft[e.product.id]));
     const gifts = all.filter(isDonated);
@@ -767,7 +895,7 @@ function wizardNext() {
       return;
     }
     wiz.menus = menus;
-    wiz.items = wizardProducts(catalogue, menus);
+    wiz.items = wizardProducts(catalogue, menus, isOn);
     wiz.step = 1;
   } else if (wiz.step <= n) {
     recordWizardAnswer();
@@ -916,11 +1044,26 @@ function bindInputs() {
       setOverride(target, enable, 'enabled', e.target.checked);
       renderPlanInputs();
       renderRestockInputs();
+      if (menuDef().allowCustom) renderPriceTable();
     } else if (per) {
       const v = toNumber(e.target.value);
       setOverride(m.recipe, per, 'perServe', v == null || v < 0 ? null : v);
     } else return;
     changed();
+  });
+
+  $('#custom-items').addEventListener('submit', (e) => {
+    e.preventDefault();
+    addCustomItem(e.target);
+  });
+  $('#recipe-table').addEventListener('click', (e) => {
+    const id = e.target.closest('[data-remove-custom]')?.dataset.removeCustom;
+    if (id) removeCustomItem(id);
+  });
+  $('#plan-inputs').addEventListener('click', (e) => {
+    if (!e.target.closest('[data-goto-choose]')) return;
+    selectView('settings');
+    $('#panel-settings').scrollIntoView({ behavior: 'smooth', block: 'start' });
   });
 
   $('#price-table').addEventListener('input', (e) => {
@@ -951,6 +1094,7 @@ function bindInputs() {
 
 let bound = false;
 function init() {
+  rebuildCatalogue();
   $('#group-name').textContent = catalogue.groupName || 'Scout Group';
   if (!bound) {
     renderMenuTabs();
@@ -969,7 +1113,8 @@ async function start() {
   try {
     const res = await fetch('data/catalogue.json', { cache: 'no-cache' });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    catalogue = await res.json();
+    baseCatalogue = await res.json();
+    catalogue = baseCatalogue;
   } catch (err) {
     document.querySelector('main').innerHTML = `<div class="card notice">Couldn't load the price list (${esc(err.message)}).
       If you opened index.html straight from disk, run a local web server instead (see README).</div>`;

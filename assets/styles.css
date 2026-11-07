@@ -412,3 +412,27 @@ dialog.wizard::backdrop { background: rgba(0, 0, 0, 0.35); -webkit-backdrop-filt
 .wizard .wizard-actions .right { display: flex; gap: 8px; margin-left: auto; }
 .wizard ul.changes { max-height: 40vh; margin: 0; padding-left: 20px; overflow: auto; }
 @media print { dialog.wizard { display: none !important; } }
+
+/* Text fields match the number fields */
+input[type=text] {
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  padding: 0.375rem 0.75rem;
+  border: 1px solid var(--input-border);
+  border-radius: var(--radius);
+  background-color: var(--surface);
+  color: var(--text);
+  font: inherit;
+  line-height: 1.5;
+}
+input[type=text]:focus { border-color: var(--tint); outline: 0; box-shadow: 0 0 0 0.2rem var(--focus-ring); }
+input[type=text]:focus-visible { outline: none; }
+
+/* Adding your own drinks */
+.custom-form { margin-top: 16px; padding-top: 4px; border-top: 1px solid var(--border-soft); }
+.custom-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+.custom-grid .wide { grid-column: 1 / -1; }
+.custom-form .notice { margin: 12px 0 0; }
+button.link.danger { margin-left: 8px; color: #ff3b30; }
+@media (max-width: 640px) { .custom-grid { grid-template-columns: 1fr 1fr; } }

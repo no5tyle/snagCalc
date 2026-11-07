@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { cheapestPacks, calculate, calculateRestock, calculateItems, wizardProducts, applyWizardPrices, round2 } from '../assets/calc.js';
+import { cheapestPacks, calculate, calculateRestock, calculateItems, wizardProducts, applyWizardPrices, round2, withCustomItems } from '../assets/calc.js';
 
 const catalogue = JSON.parse(readFileSync(new URL('../data/catalogue.json', import.meta.url)));
 
@@ -222,4 +222,38 @@ test('donated products cost nothing and keep their value', () => {
   assert.equal(r.donatedValue, 105);
   const normal = calculate({ catalogue, menuId: 'sausage-sizzle', serves: 200, store: 'cheapest' });
   assert.equal(round2(normal.totalCost - r.totalCost), 110);
+});
+
+test('withCustomItems adds the user\'s own drinks to a copy of the catalogue', () => {
+  const custom = [
+    { id: 'custom-ice-tea', menu: 'drinks', name: 'Iced tea', unit: 'bottles', packSize: 12, price: 18, store: 'woolworths', quantity: 24, salePrice: 3 },
+    { id: 'custom-bad', menu: 'nope', name: 'x', unit: 'cans', packSize: 6, price: 5, store: 'woolworths' },
+    { id: 'custom-bad2', menu: 'drinks', name: 'y', unit: 'cans', packSize: 0, price: 5, store: 'woolworths' },
+  ];
+  const cat = withCustomItems(catalogue, custom);
+  assert.ok(!catalogue.ingredients['custom-ice-tea'], 'original untouched');
+  assert.ok(cat.ingredients['custom-ice-tea']);
+  assert.ok(!cat.ingredients['custom-bad'] && !cat.ingredients['custom-bad2']);
+  const r = calculateItems({ catalogue: cat, menuId: 'drinks', store: 'cheapest' });
+  const tea = r.lines.find((l) => l.id === 'custom-ice-tea');
+  assert.equal(tea.needed, 24);
+  assert.equal(tea.purchase.cost, 36); // 2 × $18
+  assert.equal(tea.salePrice, 3);
+  assert.ok(tea.purchase.packs[0].product.custom);
+});
+
+test('big-name drinks are offered, with the group\'s usual ones switched on', () => {
+  const lines = catalogue.menu.drinks.recipe;
+  for (const id of ['coca-cola', 'coke-no-sugar', 'pepsi', 'pepsi-max', 'sprite', 'fanta', 'solo', 'water']) {
+    assert.ok(lines.some((l) => l.ingredient === id), `${id} offered`);
+  }
+  const on = lines.filter((l) => l.enabled).map((l) => l.ingredient).sort();
+  assert.deepEqual(on, ['pepsi', 'pepsi-max', 'solo', 'water']);
+});
+
+test('wizardProducts can leave out items that are switched off', () => {
+  const on = (menuId, id) => id !== 'coca-cola';
+  const ids = wizardProducts(catalogue, ['drinks'], on).map((e) => e.product.id);
+  assert.ok(!ids.includes('ww-coca-cola-24'));
+  assert.ok(ids.includes('ww-pepsi-24'));
 });
