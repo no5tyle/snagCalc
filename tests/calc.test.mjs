@@ -108,7 +108,7 @@ test('restock buys nothing when stock already covers the remainder', () => {
     menuId: 'sausage-sizzle',
     totalDesired: 100,
     sold: 90,
-    stock: { sausages: 50, bread: 50, onions: 5000, 'tomato-sauce': 5000, 'bbq-sauce': 5000, oil: 1000, napkins: 100 },
+    stock: { sausages: 50, bread: 50, onions: 5000, 'tomato-sauce': 5000, 'bbq-sauce': 5000, oil: 1000, napkins: 100, mustard: 2000 },
   });
   assert.equal(r.totalCost, 0);
   assert.ok(r.lines.every((l) => l.purchase.packs.length === 0));

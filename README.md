@@ -33,7 +33,7 @@ Everything the calculator knows lives in one JSON file:
 - Each product has a `store`, `packSize` (in the base unit), `packLabel`, `price` and `priceUpdated`.
 - `menu`: the recipe for each menu item, with the quantity used per serve.
 
-> ⚠️ **Sausages (Slape & Sons 1.5kg, Drakes Aston Hills, $11.00) and bread (Woolworths White Soft Sandwich 650g, $2.80) were checked on 2026-11-07. The other prices are still placeholder estimates.** The site labels them "estimate" until they're checked. Update them by hand, or add stockcodes and URLs so the updater can fetch them (see below).
+> ⚠️ **Prices were checked on 2026-11-07 against the group's shopping list: sausages from Drakes Aston Hills, everything else from Woolworths. Disposable gloves are still a placeholder estimate.** Prices without a `priceUpdated` date show as "estimate" on the site. Update prices by hand, or add stockcodes and URLs so the updater can fetch them (see below).
 
 ### Automatic price updates
 

@@ -26,10 +26,7 @@
       "unit": "g",
       "stockUnit": { "label": "kg", "size": 1000 },
       "products": [
-        { "id": "ww-onions-1kg", "store": "woolworths", "name": "Brown onions 1kg bag", "packSize": 1000, "packLabel": "1kg bag", "price": 3.00, "stockcode": null, "url": null, "priceUpdated": null },
-        { "id": "ww-onions-2kg", "store": "woolworths", "name": "Brown onions 2kg bag", "packSize": 2000, "packLabel": "2kg bag", "price": 5.00, "stockcode": null, "url": null, "priceUpdated": null },
-        { "id": "dk-onions-1kg", "store": "drakes", "name": "Brown onions 1kg bag", "packSize": 1000, "packLabel": "1kg bag", "price": 3.20, "url": null, "priceUpdated": null },
-        { "id": "dk-onions-2kg", "store": "drakes", "name": "Brown onions 2kg bag", "packSize": 2000, "packLabel": "2kg bag", "price": 5.50, "url": null, "priceUpdated": null }
+        { "id": "ww-onions-2kg", "store": "woolworths", "name": "Brown onions 2kg bag", "packSize": 2000, "packLabel": "2kg bag", "price": 5.50, "stockcode": null, "url": null, "priceUpdated": "2026-11-07" }
       ]
     },
     "tomato-sauce": {
@@ -37,10 +34,7 @@
       "unit": "ml",
       "stockUnit": { "label": "L", "size": 1000 },
       "products": [
-        { "id": "ww-tomato-500", "store": "woolworths", "name": "Tomato sauce 500ml", "packSize": 500, "packLabel": "500ml bottle", "price": 2.00, "stockcode": null, "url": null, "priceUpdated": null },
-        { "id": "ww-tomato-2l", "store": "woolworths", "name": "Tomato sauce 2L", "packSize": 2000, "packLabel": "2L bottle", "price": 6.00, "stockcode": null, "url": null, "priceUpdated": null },
-        { "id": "dk-tomato-500", "store": "drakes", "name": "Tomato sauce 500ml", "packSize": 500, "packLabel": "500ml bottle", "price": 2.20, "url": null, "priceUpdated": null },
-        { "id": "dk-tomato-2l", "store": "drakes", "name": "Tomato sauce 2L", "packSize": 2000, "packLabel": "2L bottle", "price": 6.50, "url": null, "priceUpdated": null }
+        { "id": "ww-fountain-tomato-500", "store": "woolworths", "name": "Fountain Tomato Sauce 500ml", "packSize": 500, "packLabel": "500ml squeeze bottle", "price": 2.20, "stockcode": null, "url": null, "priceUpdated": "2026-11-07" }
       ]
     },
     "bbq-sauce": {
@@ -48,10 +42,7 @@
       "unit": "ml",
       "stockUnit": { "label": "L", "size": 1000 },
       "products": [
-        { "id": "ww-bbq-500", "store": "woolworths", "name": "BBQ sauce 500ml", "packSize": 500, "packLabel": "500ml bottle", "price": 2.00, "stockcode": null, "url": null, "priceUpdated": null },
-        { "id": "ww-bbq-2l", "store": "woolworths", "name": "BBQ sauce 2L", "packSize": 2000, "packLabel": "2L bottle", "price": 6.00, "stockcode": null, "url": null, "priceUpdated": null },
-        { "id": "dk-bbq-500", "store": "drakes", "name": "BBQ sauce 500ml", "packSize": 500, "packLabel": "500ml bottle", "price": 2.20, "url": null, "priceUpdated": null },
-        { "id": "dk-bbq-2l", "store": "drakes", "name": "BBQ sauce 2L", "packSize": 2000, "packLabel": "2L bottle", "price": 6.50, "url": null, "priceUpdated": null }
+        { "id": "ww-fountain-bbq-500", "store": "woolworths", "name": "Fountain BBQ Sauce 500ml", "packSize": 500, "packLabel": "500ml squeeze bottle", "price": 2.20, "stockcode": null, "url": null, "priceUpdated": "2026-11-07" }
       ]
     },
     "mustard": {
@@ -59,17 +50,15 @@
       "unit": "g",
       "stockUnit": { "label": "g", "size": 1 },
       "products": [
-        { "id": "ww-mustard-500", "store": "woolworths", "name": "American mustard 500g", "packSize": 500, "packLabel": "500g bottle", "price": 3.00, "stockcode": null, "url": null, "priceUpdated": null },
-        { "id": "dk-mustard-500", "store": "drakes", "name": "American mustard 500g", "packSize": 500, "packLabel": "500g bottle", "price": 3.30, "url": null, "priceUpdated": null }
+        { "id": "ww-masterfoods-mustard-550", "store": "woolworths", "name": "Masterfoods Mild American Mustard 550g", "packSize": 550, "packLabel": "550g squeeze bottle", "price": 4.80, "stockcode": null, "url": null, "priceUpdated": "2026-11-07" }
       ]
     },
     "oil": {
-      "name": "Canola oil",
+      "name": "Sunflower oil",
       "unit": "ml",
       "stockUnit": { "label": "L", "size": 1000 },
       "products": [
-        { "id": "ww-oil-1l", "store": "woolworths", "name": "Canola oil 1L", "packSize": 1000, "packLabel": "1L bottle", "price": 4.50, "stockcode": null, "url": null, "priceUpdated": null },
-        { "id": "dk-oil-1l", "store": "drakes", "name": "Canola oil 1L", "packSize": 1000, "packLabel": "1L bottle", "price": 4.80, "url": null, "priceUpdated": null }
+        { "id": "ww-sunflower-oil-750", "store": "woolworths", "name": "Sunflower oil 750ml", "packSize": 750, "packLabel": "750ml bottle", "price": 4.00, "stockcode": null, "url": null, "priceUpdated": "2026-11-07" }
       ]
     },
     "napkins": {
@@ -77,8 +66,7 @@
       "unit": "napkins",
       "stockUnit": { "label": "napkins", "size": 1 },
       "products": [
-        { "id": "ww-napkins-100", "store": "woolworths", "name": "Lunch napkins 100 pack", "packSize": 100, "packLabel": "100 pack", "price": 2.00, "stockcode": null, "url": null, "priceUpdated": null },
-        { "id": "dk-napkins-100", "store": "drakes", "name": "Lunch napkins 100 pack", "packSize": 100, "packLabel": "100 pack", "price": 2.30, "url": null, "priceUpdated": null }
+        { "id": "ww-napkins-100", "store": "woolworths", "name": "Napkins 100 pack", "packSize": 100, "packLabel": "100 pack", "price": 0.95, "stockcode": null, "url": null, "priceUpdated": "2026-11-07" }
       ]
     },
     "gloves": {
@@ -102,7 +90,7 @@
         { "ingredient": "onions", "perServe": 15, "enabled": true, "note": "~1 medium onion per 10 sausages" },
         { "ingredient": "tomato-sauce", "perServe": 10, "enabled": true, "note": "~2 teaspoons per serve" },
         { "ingredient": "bbq-sauce", "perServe": 5, "enabled": true, "note": "fewer people take BBQ sauce" },
-        { "ingredient": "mustard", "perServe": 3, "enabled": false, "note": "optional" },
+        { "ingredient": "mustard", "perServe": 3, "enabled": true, "note": "optional" },
         { "ingredient": "oil", "perServe": 2, "enabled": true, "note": "for the hotplate and onions" },
         { "ingredient": "napkins", "perServe": 1, "enabled": true, "note": "1 per serve" },
         { "ingredient": "gloves", "perServe": 0.05, "enabled": false, "note": "about 1 glove per 20 serves" }
