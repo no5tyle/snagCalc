@@ -240,12 +240,12 @@
         { "ingredient": "tomato-sauce", "perServe": 10, "enabled": true, "note": "~2 teaspoons per sausage or sandwich" },
         { "ingredient": "bbq-sauce", "perServe": 5, "enabled": true, "note": "fewer people take BBQ sauce" },
         { "ingredient": "mustard", "perServe": 3, "servesFrom": ["sausage-sizzle"], "enabled": true, "note": "sausages only" },
-        { "ingredient": "oil", "quantity": 1, "enabled": true, "note": "about a bottle per event, for the hotplate" },
+        { "ingredient": "oil", "quantity": 1, "restock": "percentLeft", "enabled": true, "note": "about a bottle per event, for the hotplate" },
         { "ingredient": "napkins", "quantity": 1000, "enabled": true, "note": "about 1 per serve of food" },
         { "ingredient": "gloves", "quantity": 100, "enabled": true },
         { "ingredient": "paper-towels", "quantity": 3, "enabled": true },
         { "ingredient": "garbage-bags", "quantity": 20, "enabled": true },
-        { "ingredient": "dish-liquid", "quantity": 1, "enabled": true }
+        { "ingredient": "dish-liquid", "quantity": 1, "restock": "percentLeft", "enabled": true }
       ]
     }
   }

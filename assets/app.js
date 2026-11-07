@@ -188,10 +188,32 @@ function statsFor(result, restock) {
 
 const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
 
+/** Restock row for something checked by eye (e.g. oil): just whether another is needed. */
+function byEyeRow(l) {
+  const one = unitFor(1, l.ingredient.unit);
+  const share = (x) => `${num(x * 100, 0)}% of a ${esc(one)}`;
+  const buy = l.purchase.packs.reduce((s, p) => s + p.count, 0);
+  return `<tr>
+    <td class="item"><strong>${esc(l.ingredient.name)}</strong></td>
+    <td class="num" data-label="Need"><div>${share(l.needed)}<span class="sub">for day 2</span></div></td>
+    <td class="num" data-label="Have"><div>${
+      l.percentLeft == null ? 'Not checked<span class="sub">counted as empty</span>' : `${share(l.onHand)} left`
+    }</div></td>
+    <td data-label="Buy"><div>${
+      l.shortfall <= 0
+        ? '<span class="none">No more needed</span><span class="sub">What’s left should last day 2</span>'
+        : `<strong>${buy > 1 ? `${buy} more ${esc(l.ingredient.unit)} needed` : `Another ${esc(one)} needed`}</strong>${buyCell(l)}`
+    }</div></td>
+    <td class="num" data-label="Cost"><div>${money(l.purchase.cost)}</div></td>
+  </tr>`;
+}
+
 function resultsCard(result, { restock = false, title, counted = {} }) {
   const rows = result.lines
-    .map(
-      (l) => `<tr>
+    .map((l) =>
+      restock && l.byEye
+        ? byEyeRow(l)
+        : `<tr>
         <td class="item"><strong>${esc(l.ingredient.name)}</strong></td>
         <td class="num" data-label="Need"><div>${fmtQty(l.needed, l.ingredient)}</div></td>
         ${
@@ -290,7 +312,9 @@ function itemsResult(mode) {
     donated: settings.donated,
     servesByMenu: servesByMenu(mode),
     bufferPct: settings.buffer,
-    ...(mode === 'restock' ? { sold: m.restock.sold, stock: restockStock(), day2Pct: settings.day2Pct } : {}),
+    ...(mode === 'restock'
+      ? { sold: m.restock.sold, stock: restockStock(), day2Pct: settings.day2Pct, percentLeft: m.restock.leftPct || {} }
+      : {}),
   });
 }
 
@@ -532,6 +556,16 @@ function renderRestockInputs() {
       .map((r) => {
         const ing = catalogue.ingredients[r.ingredient];
         const perServe = Number.isFinite(r.perServe);
+        if (r.restock === 'percentLeft') {
+          // Checked by eye: how much of the bottle is left
+          return `<div class="item-row">
+          <span class="item-name">${esc(ing.name)}<span class="sub">Planned: ${num(r.quantity, 0)} ${esc(unitFor(r.quantity, ing.unit))}. An unopened one counts as 100%.</span></span>
+          <label class="span-all">How much of the ${esc(unitFor(1, ing.unit))} is left?
+            <span class="input-suffix"><input type="number" min="0" step="5" inputmode="numeric" data-left-pct="${esc(r.ingredient)}"
+              value="${valueAttr(m.restock.leftPct?.[r.ingredient])}" placeholder="e.g. 40"><span>%</span></span>
+          </label>
+        </div>`;
+        }
         return `<div class="item-row">
           <span class="item-name">${esc(ing.name)}<span class="sub">${
             perServe
@@ -1108,7 +1142,7 @@ function bindInputs() {
     $(panel).addEventListener('input', (e) => {
       const t = e.target;
       const m = ms();
-      const { field, qty, sale, sold, stock, perItem } = t.dataset;
+      const { field, qty, sale, sold, stock, perItem, leftPct } = t.dataset;
       const v = toNumber(t.value);
       const clamp = v == null || v < 0 ? null : v;
       if (field === 'planServes') m.planServes = nonNeg(t.value);
@@ -1120,6 +1154,11 @@ function bindInputs() {
       }
       else if (qty) setOverride(m.items, qty, 'quantity', clamp);
       else if (perItem) setOverride(m.items, perItem, 'perServe', clamp);
+      else if (leftPct) {
+        m.restock.leftPct = { ...m.restock.leftPct };
+        if (clamp == null) delete m.restock.leftPct[leftPct];
+        else m.restock.leftPct[leftPct] = clamp;
+      }
       else if (sale) setOverride(m.items, sale, 'salePrice', clamp);
       else if (sold) {
         if (clamp == null) delete m.restock.sold[sold];

@@ -229,6 +229,9 @@ input[type=number]:focus-visible, select:focus-visible { outline: none; }
 .item-row { display: grid; grid-template-columns: minmax(140px, 1.2fr) repeat(2, minmax(120px, 1fr)); gap: 8px 12px; align-items: end; padding-bottom: 12px; border-bottom: 1px solid var(--border-soft); }
 .item-row:last-child { border-bottom: none; padding-bottom: 0; }
 .item-name { align-self: center; font-weight: 600; }
+.item-row .span-all { grid-column: 2 / -1; }
+.item-row .span-all input { max-width: 160px; }
+@media (max-width: 640px) { .item-row .span-all { grid-column: 1 / -1; } }
 .hint.small { margin: 10px 0 0; font-size: .85rem; }
 
 /* The views within a tab are a segmented control: a capsule track with the chosen one raised in it */

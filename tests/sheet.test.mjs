@@ -155,3 +155,12 @@ test('donated items cost nothing in the sheet and add to donations worth', () =>
   near(labelled(rows, v, 'Donations worth'), result.donatedValue);
   near(result.donatedValue, 110);
 });
+
+test('restock sheet keeps checked-by-eye bottles as fractions', () => {
+  const result = calculateItems({ catalogue, menuId: 'consumables', store: 'cheapest', day2Pct: 50, percentLeft: { oil: 40, 'dish-liquid': 10 } });
+  const rows = buildSheet({ kind: 'items', mode: 'restock', result, title: 'Consumables', sells: false, day2Pct: 50, bufferPct: 5, foodServes: [] });
+  near(labelled(rows, evaluate(rows), 'Shopping total'), result.totalCost);
+  // Oil (40% left) needs nothing; dish liquid (10% left, needs 45%) needs one
+  assert.ok(result.lines.find((l) => l.id === 'oil').purchase.packs.length === 0);
+  assert.equal(result.lines.find((l) => l.id === 'dish-liquid').purchase.packs[0].count, 1);
+});

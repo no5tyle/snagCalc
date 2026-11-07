@@ -130,7 +130,8 @@ export function buildSheet({ kind, mode, result, title, serveLabel = 'serves', s
         } else if (restock) {
           v.sold = line.sold;
           v.have = round(line.onHand);
-          v.need = `=ROUNDUP(${C.sold}${r}*${cell.pct}/100,0)`;
+          // Checked by eye (e.g. oil): fractions of a bottle, not rounded up
+          v.need = line.byEye ? `=ROUND(${C.sold}${r}*${cell.pct}/100,6)` : `=ROUNDUP(${C.sold}${r}*${cell.pct}/100,0)`;
         } else {
           v.need = line.planned;
         }

@@ -228,6 +228,12 @@ export function effectiveItems(catalogue, menuId, overrides = {}) {
  * line then needs day2Pct% of its day 1 count, and buys whatever stock
  * doesn't cover. Scaled lines use `servesByMenu` as day 2's expected serves.
  *
+ * Lines marked `"restock": "percentLeft"` (e.g. oil) are checked by eye
+ * instead: `percentLeft` ({ [ingredientId]: % of a bottle }) says how much is
+ * left, 100 per unopened bottle. Day 1 used the planned bottles minus that,
+ * day 2 needs day2Pct% of it, and another bottle is bought only if what's
+ * left won't cover it. Not checked yet counts as empty.
+ *
  * Revenue is quantity × salePrice for lines still to sell.
  */
 export function calculateItems({
@@ -242,6 +248,7 @@ export function calculateItems({
   servesByMenu = {},
   bufferPct = 0,
   day2Pct = null,
+  percentLeft = {},
 }) {
   const restock = day2Pct != null;
   const storeIds = Object.keys(catalogue.stores);
@@ -255,9 +262,23 @@ export function calculateItems({
       const servesFrom = scaled ? r.servesFrom ?? Object.keys(servesByMenu) : [];
       const serves = servesFrom.reduce((sum, id) => sum + Math.max(0, Number(servesByMenu[id]) || 0), 0);
       const planned = scaled ? roundQty(serves * r.perServe * factor) : Math.max(0, Number(r.quantity) || 0);
-      const soldQty = scaled ? 0 : Math.max(0, Number(sold[r.ingredient]) || 0);
-      const needed = scaled ? planned : restock ? expectedDay2(soldQty, day2Pct) : planned;
-      const onHand = Math.max(0, Number(stock[r.ingredient]) || 0);
+      const byEye = restock && !scaled && r.restock === 'percentLeft';
+      const leftPct = Number(percentLeft[r.ingredient]);
+      const checked = byEye && Number.isFinite(leftPct) && leftPct >= 0;
+      const left = checked ? leftPct / 100 : 0;
+      let soldQty;
+      let needed;
+      let onHand;
+      if (byEye) {
+        // Fractions of a bottle: what day 1 used, scaled to day 2, without rounding up
+        soldQty = roundQty(Math.max(0, planned - left));
+        needed = roundQty((soldQty * Math.max(0, Number(day2Pct) || 0)) / 100);
+        onHand = left;
+      } else {
+        soldQty = scaled ? 0 : Math.max(0, Number(sold[r.ingredient]) || 0);
+        needed = scaled ? planned : restock ? expectedDay2(soldQty, day2Pct) : planned;
+        onHand = Math.max(0, Number(stock[r.ingredient]) || 0);
+      }
       const shortfall = roundQty(Math.max(0, needed - onHand));
       const products = pricedProducts(ingredient.products, priceOverrides, donated);
       const purchase = purchaseFor(shortfall, products, store, storeIds);
@@ -267,6 +288,7 @@ export function calculateItems({
         id: r.ingredient,
         ingredient,
         ...(scaled ? { perServe: r.perServe, servesFrom, serves } : {}),
+        ...(byEye ? { byEye: true, percentLeft: checked ? leftPct : null } : {}),
         planned,
         sold: soldQty,
         needed,

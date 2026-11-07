@@ -300,3 +300,25 @@ test('oil is a consumable: one bottle per event, not in the food recipes', () =>
   assert.equal(oil.purchase.packs[0].count, 1);
   assert.equal(oil.purchase.cost, 4);
 });
+
+test('bottles checked by eye: another is bought only if what is left will not last day 2', () => {
+  const run = (percentLeft, day2Pct = 50) =>
+    calculateItems({ catalogue, menuId: 'consumables', day2Pct, percentLeft: { oil: percentLeft } }).lines.find((l) => l.id === 'oil');
+  // 40% left: day 1 used 60%, day 2 at 50% needs 30%, so it's enough
+  let oil = run(40);
+  assert.equal(oil.byEye, true);
+  assert.equal(oil.sold, 0.6);
+  assert.equal(oil.needed, 0.3);
+  assert.equal(oil.shortfall, 0);
+  assert.equal(oil.purchase.packs.length, 0);
+  // 20% left: day 1 used 80%, day 2 needs 40%, so another bottle
+  oil = run(20);
+  assert.ok(oil.shortfall > 0);
+  assert.equal(oil.purchase.packs[0].count, 1);
+  // Not checked counts as empty: day 1 used the whole bottle
+  oil = run(undefined, 100);
+  assert.equal(oil.percentLeft, null);
+  assert.equal(oil.purchase.packs[0].count, 1);
+  // An unopened spare (100%) plus some is plenty
+  assert.equal(run(140, 100).shortfall, 0);
+});
