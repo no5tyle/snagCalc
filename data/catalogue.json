@@ -1,185 +1,483 @@
 {
   "groupName": "Scout Group",
   "stores": {
-    "woolworths": { "name": "Woolworths" },
-    "drakes": { "name": "Drakes" }
+    "woolworths": {
+      "name": "Woolworths"
+    },
+    "drakes": {
+      "name": "Drakes"
+    }
   },
   "ingredients": {
     "sausages": {
       "name": "Sausages",
       "unit": "sausages",
-      "stockUnit": { "label": "sausages", "size": 1 },
+      "stockUnit": {
+        "label": "sausages",
+        "size": 1
+      },
       "products": [
-        { "id": "dk-slapes-bbq-1.5kg", "store": "drakes", "name": "Slape & Sons Traditional BBQ Sausages 21 pack 1.5kg", "packSize": 21, "packLabel": "1.5kg (21 sausages)", "price": 11.00, "url": "https://142.drakes.com.au/lines/slape-sons-traditional-range-bbq-sausages-21-pack-1-5kg", "priceUpdated": "2026-11-07" }
+        {
+          "id": "dk-slapes-bbq-1.5kg",
+          "store": "drakes",
+          "name": "Slape & Sons Traditional BBQ Sausages 21 pack 1.5kg",
+          "packSize": 21,
+          "packLabel": "1.5kg (21 sausages)",
+          "price": 11,
+          "url": "https://142.drakes.com.au/lines/slape-sons-traditional-range-bbq-sausages-21-pack-1-5kg",
+          "priceUpdated": "2026-11-08"
+        }
       ]
     },
     "bread": {
       "name": "Bread",
       "unit": "slices",
-      "stockUnit": { "label": "loaves", "size": 20 },
+      "stockUnit": {
+        "label": "loaves",
+        "size": 20
+      },
       "products": [
-        { "id": "ww-bread-white", "store": "woolworths", "name": "Woolworths White Soft Sandwich Bread 650g", "packSize": 20, "packLabel": "loaf (~20 usable slices)", "price": 2.80, "stockcode": "581172", "url": null, "priceUpdated": "2026-11-07" }
+        {
+          "id": "ww-bread-white",
+          "store": "woolworths",
+          "name": "Woolworths White Soft Sandwich Bread 650g",
+          "packSize": 20,
+          "packLabel": "loaf (~20 usable slices)",
+          "price": 2.8,
+          "stockcode": "581172",
+          "url": null,
+          "priceUpdated": "2026-11-07"
+        }
       ]
     },
     "onions": {
       "name": "Brown onions",
       "unit": "g",
-      "stockUnit": { "label": "kg", "size": 1000 },
+      "stockUnit": {
+        "label": "kg",
+        "size": 1000
+      },
       "products": [
-        { "id": "ww-onions-2kg", "store": "woolworths", "name": "Brown onions 2kg bag", "packSize": 2000, "packLabel": "2kg bag", "price": 5.50, "stockcode": null, "url": null, "priceUpdated": "2026-11-07" }
+        {
+          "id": "ww-onions-2kg",
+          "store": "woolworths",
+          "name": "Brown onions 2kg bag",
+          "packSize": 2000,
+          "packLabel": "2kg bag",
+          "price": 5.5,
+          "stockcode": null,
+          "url": null,
+          "priceUpdated": "2026-11-07"
+        }
       ]
     },
     "tomato-sauce": {
       "name": "Tomato sauce",
       "unit": "ml",
-      "stockUnit": { "label": "L", "size": 1000 },
+      "stockUnit": {
+        "label": "L",
+        "size": 1000
+      },
       "products": [
-        { "id": "ww-fountain-tomato-500", "store": "woolworths", "name": "Fountain Tomato Sauce 500ml", "packSize": 500, "packLabel": "500ml squeeze bottle", "price": 2.20, "stockcode": null, "url": null, "priceUpdated": "2026-11-07" }
+        {
+          "id": "ww-fountain-tomato-500",
+          "store": "woolworths",
+          "name": "Fountain Tomato Sauce 500ml",
+          "packSize": 500,
+          "packLabel": "500ml squeeze bottle",
+          "price": 2.2,
+          "stockcode": null,
+          "url": null,
+          "priceUpdated": "2026-11-07"
+        }
       ]
     },
     "bbq-sauce": {
       "name": "BBQ sauce",
       "unit": "ml",
-      "stockUnit": { "label": "L", "size": 1000 },
+      "stockUnit": {
+        "label": "L",
+        "size": 1000
+      },
       "products": [
-        { "id": "ww-fountain-bbq-500", "store": "woolworths", "name": "Fountain BBQ Sauce 500ml", "packSize": 500, "packLabel": "500ml squeeze bottle", "price": 2.20, "stockcode": null, "url": null, "priceUpdated": "2026-11-07" }
+        {
+          "id": "ww-fountain-bbq-500",
+          "store": "woolworths",
+          "name": "Fountain BBQ Sauce 500ml",
+          "packSize": 500,
+          "packLabel": "500ml squeeze bottle",
+          "price": 2.2,
+          "stockcode": null,
+          "url": null,
+          "priceUpdated": "2026-11-07"
+        }
       ]
     },
     "mustard": {
       "name": "American mustard",
       "unit": "g",
-      "stockUnit": { "label": "g", "size": 1 },
+      "stockUnit": {
+        "label": "g",
+        "size": 1
+      },
       "products": [
-        { "id": "ww-masterfoods-mustard-550", "store": "woolworths", "name": "Masterfoods Mild American Mustard 550g", "packSize": 550, "packLabel": "550g squeeze bottle", "price": 4.80, "stockcode": null, "url": null, "priceUpdated": "2026-11-07" }
+        {
+          "id": "ww-masterfoods-mustard-550",
+          "store": "woolworths",
+          "name": "Masterfoods Mild American Mustard 550g",
+          "packSize": 550,
+          "packLabel": "550g squeeze bottle",
+          "price": 4.8,
+          "stockcode": null,
+          "url": null,
+          "priceUpdated": "2026-11-07"
+        }
       ]
     },
     "oil": {
       "name": "Oil",
       "unit": "bottles",
-      "stockUnit": { "label": "bottles", "size": 1 },
+      "stockUnit": {
+        "label": "bottles",
+        "size": 1
+      },
       "products": [
-        { "id": "ww-sunflower-oil-750", "store": "woolworths", "name": "Oil 750ml", "packSize": 1, "packLabel": "750ml bottle", "price": 4.00, "stockcode": null, "url": null, "priceUpdated": "2026-11-07" }
+        {
+          "id": "ww-sunflower-oil-750",
+          "store": "woolworths",
+          "name": "Oil 750ml",
+          "packSize": 1,
+          "packLabel": "750ml bottle",
+          "price": 4,
+          "stockcode": null,
+          "url": null,
+          "priceUpdated": "2026-11-07"
+        }
       ]
     },
     "napkins": {
       "name": "Napkins / serviettes",
       "unit": "napkins",
-      "stockUnit": { "label": "napkins", "size": 1 },
+      "stockUnit": {
+        "label": "napkins",
+        "size": 1
+      },
       "products": [
-        { "id": "ww-napkins-100", "store": "woolworths", "name": "Napkins 100 pack", "packSize": 100, "packLabel": "100 pack", "price": 0.95, "stockcode": null, "url": null, "priceUpdated": "2026-11-07" }
+        {
+          "id": "ww-napkins-100",
+          "store": "woolworths",
+          "name": "Napkins 100 pack",
+          "packSize": 100,
+          "packLabel": "100 pack",
+          "price": 0.95,
+          "stockcode": null,
+          "url": null,
+          "priceUpdated": "2026-11-07"
+        }
       ]
     },
     "gloves": {
       "name": "Disposable food gloves",
       "unit": "gloves",
-      "stockUnit": { "label": "gloves", "size": 1 },
+      "stockUnit": {
+        "label": "gloves",
+        "size": 1
+      },
       "products": [
-        { "id": "ww-gloves-100", "store": "woolworths", "name": "Disposable gloves 100 pack", "packSize": 100, "packLabel": "100 pack", "price": 6.00, "stockcode": null, "url": null, "priceUpdated": null },
-        { "id": "dk-gloves-100", "store": "drakes", "name": "Disposable gloves 100 pack", "packSize": 100, "packLabel": "100 pack", "price": 6.50, "url": null, "priceUpdated": null }
+        {
+          "id": "ww-gloves-100",
+          "store": "woolworths",
+          "name": "Disposable gloves 100 pack",
+          "packSize": 100,
+          "packLabel": "100 pack",
+          "price": 6,
+          "stockcode": null,
+          "url": null,
+          "priceUpdated": null
+        },
+        {
+          "id": "dk-gloves-100",
+          "store": "drakes",
+          "name": "Disposable gloves 100 pack",
+          "packSize": 100,
+          "packLabel": "100 pack",
+          "price": 6.5,
+          "url": null,
+          "priceUpdated": null
+        }
       ]
     },
     "eggs": {
       "name": "Eggs",
       "unit": "eggs",
-      "stockUnit": { "label": "dozen", "size": 12 },
+      "stockUnit": {
+        "label": "dozen",
+        "size": 12
+      },
       "products": [
-        { "id": "ww-eggs-12", "store": "woolworths", "name": "Cage-free eggs 12 pack 700g", "packSize": 12, "packLabel": "dozen", "price": 6.50, "stockcode": null, "url": null, "priceUpdated": null }
+        {
+          "id": "ww-eggs-12",
+          "store": "woolworths",
+          "name": "Cage-free eggs 12 pack 700g",
+          "packSize": 12,
+          "packLabel": "dozen",
+          "price": 6.5,
+          "stockcode": null,
+          "url": null,
+          "priceUpdated": null
+        }
       ]
     },
     "bacon": {
       "name": "Bacon",
       "unit": "rashers",
-      "stockUnit": { "label": "rashers", "size": 1 },
+      "stockUnit": {
+        "label": "rashers",
+        "size": 1
+      },
       "products": [
-        { "id": "ww-bacon-1kg", "store": "woolworths", "name": "Middle bacon rashers 1kg", "packSize": 20, "packLabel": "1kg (~20 rashers)", "price": 14.00, "stockcode": null, "url": null, "priceUpdated": null }
+        {
+          "id": "ww-bacon-1kg",
+          "store": "woolworths",
+          "name": "Middle bacon rashers 1kg",
+          "packSize": 20,
+          "packLabel": "1kg (~20 rashers)",
+          "price": 14,
+          "stockcode": null,
+          "url": null,
+          "priceUpdated": null
+        }
       ]
     },
     "paper-towels": {
       "name": "Paper towels",
       "unit": "rolls",
-      "stockUnit": { "label": "rolls", "size": 1 },
+      "stockUnit": {
+        "label": "rolls",
+        "size": 1
+      },
       "products": [
-        { "id": "ww-paper-towels-3", "store": "woolworths", "name": "Paper towels 3 pack", "packSize": 3, "packLabel": "3 rolls", "price": 2.50, "stockcode": null, "url": null, "priceUpdated": "2026-11-07" }
+        {
+          "id": "ww-paper-towels-3",
+          "store": "woolworths",
+          "name": "Paper towels 3 pack",
+          "packSize": 3,
+          "packLabel": "3 rolls",
+          "price": 2.5,
+          "stockcode": null,
+          "url": null,
+          "priceUpdated": "2026-11-07"
+        }
       ]
     },
     "garbage-bags": {
       "name": "Garbage bags",
       "unit": "bags",
-      "stockUnit": { "label": "bags", "size": 1 },
+      "stockUnit": {
+        "label": "bags",
+        "size": 1
+      },
       "products": [
-        { "id": "ww-garbage-bags-56l-20", "store": "woolworths", "name": "Garbage bags 56L 20 pack", "packSize": 20, "packLabel": "20 bags", "price": 3.80, "stockcode": null, "url": null, "priceUpdated": "2026-11-07" }
+        {
+          "id": "ww-garbage-bags-56l-20",
+          "store": "woolworths",
+          "name": "Garbage bags 56L 20 pack",
+          "packSize": 20,
+          "packLabel": "20 bags",
+          "price": 3.8,
+          "stockcode": null,
+          "url": null,
+          "priceUpdated": "2026-11-07"
+        }
       ]
     },
     "dish-liquid": {
       "name": "Dishwashing liquid",
       "unit": "bottles",
-      "stockUnit": { "label": "bottles", "size": 1 },
+      "stockUnit": {
+        "label": "bottles",
+        "size": 1
+      },
       "products": [
-        { "id": "ww-dish-liquid", "store": "woolworths", "name": "Dishwashing liquid", "packSize": 1, "packLabel": "bottle", "price": 3.00, "stockcode": null, "url": null, "priceUpdated": "2026-11-07" }
+        {
+          "id": "ww-dish-liquid",
+          "store": "woolworths",
+          "name": "Dishwashing liquid",
+          "packSize": 1,
+          "packLabel": "bottle",
+          "price": 3,
+          "stockcode": null,
+          "url": null,
+          "priceUpdated": "2026-11-07"
+        }
       ]
     },
     "pepsi": {
       "name": "Pepsi",
       "unit": "cans",
-      "stockUnit": { "label": "cans", "size": 1 },
+      "stockUnit": {
+        "label": "cans",
+        "size": 1
+      },
       "products": [
-        { "id": "ww-pepsi-24", "store": "woolworths", "name": "Pepsi 24 pack", "packSize": 24, "packLabel": "24 cans", "price": 23.00, "stockcode": null, "url": null, "priceUpdated": "2026-11-07" }
+        {
+          "id": "ww-pepsi-24",
+          "store": "woolworths",
+          "name": "Pepsi 24 pack",
+          "packSize": 24,
+          "packLabel": "24 cans",
+          "price": 23,
+          "stockcode": null,
+          "url": null,
+          "priceUpdated": "2026-11-07"
+        }
       ]
     },
     "pepsi-max": {
       "name": "Pepsi Max",
       "unit": "cans",
-      "stockUnit": { "label": "cans", "size": 1 },
+      "stockUnit": {
+        "label": "cans",
+        "size": 1
+      },
       "products": [
-        { "id": "ww-pepsi-max-24", "store": "woolworths", "name": "Pepsi Max 24 pack", "packSize": 24, "packLabel": "24 cans", "price": 23.00, "stockcode": null, "url": null, "priceUpdated": "2026-11-07" }
+        {
+          "id": "ww-pepsi-max-24",
+          "store": "woolworths",
+          "name": "Pepsi Max 24 pack",
+          "packSize": 24,
+          "packLabel": "24 cans",
+          "price": 23,
+          "stockcode": null,
+          "url": null,
+          "priceUpdated": "2026-11-07"
+        }
       ]
     },
     "solo": {
       "name": "Solo",
       "unit": "cans",
-      "stockUnit": { "label": "cans", "size": 1 },
+      "stockUnit": {
+        "label": "cans",
+        "size": 1
+      },
       "products": [
-        { "id": "ww-solo-30", "store": "woolworths", "name": "Solo 30 pack", "packSize": 30, "packLabel": "30 cans", "price": 26.00, "stockcode": null, "url": null, "priceUpdated": "2026-11-07" }
+        {
+          "id": "ww-solo-30",
+          "store": "woolworths",
+          "name": "Solo 30 pack",
+          "packSize": 30,
+          "packLabel": "30 cans",
+          "price": 26,
+          "stockcode": null,
+          "url": null,
+          "priceUpdated": "2026-11-07"
+        }
       ]
     },
     "water": {
       "name": "Water",
       "unit": "bottles",
-      "stockUnit": { "label": "bottles", "size": 1 },
+      "stockUnit": {
+        "label": "bottles",
+        "size": 1
+      },
       "products": [
-        { "id": "ww-water-24", "store": "woolworths", "name": "Water 24 pack", "packSize": 24, "packLabel": "24 bottles", "price": 9.40, "stockcode": null, "url": null, "priceUpdated": "2026-11-07" }
+        {
+          "id": "ww-water-24",
+          "store": "woolworths",
+          "name": "Water 24 pack",
+          "packSize": 24,
+          "packLabel": "24 bottles",
+          "price": 9.4,
+          "stockcode": null,
+          "url": null,
+          "priceUpdated": "2026-11-07"
+        }
       ]
     },
     "coca-cola": {
       "name": "Coca-Cola",
       "unit": "cans",
-      "stockUnit": { "label": "cans", "size": 1 },
+      "stockUnit": {
+        "label": "cans",
+        "size": 1
+      },
       "products": [
-        { "id": "ww-coca-cola-24", "store": "woolworths", "name": "Coca-Cola 24 pack", "packSize": 24, "packLabel": "24 cans", "price": 30.00, "stockcode": null, "url": null, "priceUpdated": null }
+        {
+          "id": "ww-coca-cola-24",
+          "store": "woolworths",
+          "name": "Coca-Cola 24 pack",
+          "packSize": 24,
+          "packLabel": "24 cans",
+          "price": 30,
+          "stockcode": null,
+          "url": null,
+          "priceUpdated": null
+        }
       ]
     },
     "coke-no-sugar": {
       "name": "Coke No Sugar",
       "unit": "cans",
-      "stockUnit": { "label": "cans", "size": 1 },
+      "stockUnit": {
+        "label": "cans",
+        "size": 1
+      },
       "products": [
-        { "id": "ww-coke-no-sugar-24", "store": "woolworths", "name": "Coke No Sugar 24 pack", "packSize": 24, "packLabel": "24 cans", "price": 30.00, "stockcode": null, "url": null, "priceUpdated": null }
+        {
+          "id": "ww-coke-no-sugar-24",
+          "store": "woolworths",
+          "name": "Coke No Sugar 24 pack",
+          "packSize": 24,
+          "packLabel": "24 cans",
+          "price": 30,
+          "stockcode": null,
+          "url": null,
+          "priceUpdated": null
+        }
       ]
     },
     "sprite": {
       "name": "Sprite",
       "unit": "cans",
-      "stockUnit": { "label": "cans", "size": 1 },
+      "stockUnit": {
+        "label": "cans",
+        "size": 1
+      },
       "products": [
-        { "id": "ww-sprite-24", "store": "woolworths", "name": "Sprite 24 pack", "packSize": 24, "packLabel": "24 cans", "price": 30.00, "stockcode": null, "url": null, "priceUpdated": null }
+        {
+          "id": "ww-sprite-24",
+          "store": "woolworths",
+          "name": "Sprite 24 pack",
+          "packSize": 24,
+          "packLabel": "24 cans",
+          "price": 30,
+          "stockcode": null,
+          "url": null,
+          "priceUpdated": null
+        }
       ]
     },
     "fanta": {
       "name": "Fanta",
       "unit": "cans",
-      "stockUnit": { "label": "cans", "size": 1 },
+      "stockUnit": {
+        "label": "cans",
+        "size": 1
+      },
       "products": [
-        { "id": "ww-fanta-24", "store": "woolworths", "name": "Fanta 24 pack", "packSize": 24, "packLabel": "24 cans", "price": 30.00, "stockcode": null, "url": null, "priceUpdated": null }
+        {
+          "id": "ww-fanta-24",
+          "store": "woolworths",
+          "name": "Fanta 24 pack",
+          "packSize": 24,
+          "packLabel": "24 cans",
+          "price": 30,
+          "stockcode": null,
+          "url": null,
+          "priceUpdated": null
+        }
       ]
     }
   },
@@ -187,11 +485,26 @@
     "sausage-sizzle": {
       "name": "Sausage sizzle",
       "serveLabel": "sausages",
-      "defaultSalePrice": 3.00,
+      "defaultSalePrice": 3,
       "recipe": [
-        { "ingredient": "sausages", "perServe": 1, "enabled": true, "note": "1 sausage per serve" },
-        { "ingredient": "bread", "perServe": 1, "enabled": true, "note": "1 slice per sausage" },
-        { "ingredient": "onions", "perServe": 15, "enabled": true, "note": "~1 medium onion per 10 sausages" }
+        {
+          "ingredient": "sausages",
+          "perServe": 1,
+          "enabled": true,
+          "note": "1 sausage per serve"
+        },
+        {
+          "ingredient": "bread",
+          "perServe": 1,
+          "enabled": true,
+          "note": "1 slice per sausage"
+        },
+        {
+          "ingredient": "onions",
+          "perServe": 15,
+          "enabled": true,
+          "note": "~1 medium onion per 10 sausages"
+        }
       ],
       "icon": "🌭",
       "tabLabel": "Sausages",
@@ -205,11 +518,26 @@
       "serveLabel": "sandwiches",
       "serveNoun": "sandwich",
       "defaultServes": 100,
-      "defaultSalePrice": 6.00,
+      "defaultSalePrice": 6,
       "recipe": [
-        { "ingredient": "eggs", "perServe": 1, "enabled": true, "note": "1 egg per sandwich" },
-        { "ingredient": "bacon", "perServe": 2, "enabled": true, "note": "2 rashers per sandwich" },
-        { "ingredient": "bread", "perServe": 2, "enabled": true, "note": "2 slices per sandwich" }
+        {
+          "ingredient": "eggs",
+          "perServe": 1,
+          "enabled": true,
+          "note": "1 egg per sandwich"
+        },
+        {
+          "ingredient": "bacon",
+          "perServe": 2,
+          "enabled": true,
+          "note": "2 rashers per sandwich"
+        },
+        {
+          "ingredient": "bread",
+          "perServe": 2,
+          "enabled": true,
+          "note": "2 slices per sandwich"
+        }
       ]
     },
     "drinks": {
@@ -219,14 +547,54 @@
       "kind": "items",
       "sells": true,
       "recipe": [
-        { "ingredient": "coca-cola", "quantity": 24, "salePrice": 2.00, "enabled": false },
-        { "ingredient": "coke-no-sugar", "quantity": 24, "salePrice": 2.00, "enabled": false },
-        { "ingredient": "pepsi", "quantity": 24, "salePrice": 2.00, "enabled": true },
-        { "ingredient": "pepsi-max", "quantity": 24, "salePrice": 2.00, "enabled": true },
-        { "ingredient": "sprite", "quantity": 24, "salePrice": 2.00, "enabled": false },
-        { "ingredient": "fanta", "quantity": 24, "salePrice": 2.00, "enabled": false },
-        { "ingredient": "solo", "quantity": 30, "salePrice": 2.00, "enabled": true },
-        { "ingredient": "water", "quantity": 48, "salePrice": 2.00, "enabled": true }
+        {
+          "ingredient": "coca-cola",
+          "quantity": 24,
+          "salePrice": 2,
+          "enabled": false
+        },
+        {
+          "ingredient": "coke-no-sugar",
+          "quantity": 24,
+          "salePrice": 2,
+          "enabled": false
+        },
+        {
+          "ingredient": "pepsi",
+          "quantity": 24,
+          "salePrice": 2,
+          "enabled": true
+        },
+        {
+          "ingredient": "pepsi-max",
+          "quantity": 24,
+          "salePrice": 2,
+          "enabled": true
+        },
+        {
+          "ingredient": "sprite",
+          "quantity": 24,
+          "salePrice": 2,
+          "enabled": false
+        },
+        {
+          "ingredient": "fanta",
+          "quantity": 24,
+          "salePrice": 2,
+          "enabled": false
+        },
+        {
+          "ingredient": "solo",
+          "quantity": 30,
+          "salePrice": 2,
+          "enabled": true
+        },
+        {
+          "ingredient": "water",
+          "quantity": 48,
+          "salePrice": 2,
+          "enabled": true
+        }
       ],
       "allowCustom": true
     },
@@ -237,15 +605,61 @@
       "kind": "items",
       "sells": false,
       "recipe": [
-        { "ingredient": "tomato-sauce", "perServe": 10, "enabled": true, "note": "~2 teaspoons per sausage or sandwich" },
-        { "ingredient": "bbq-sauce", "perServe": 5, "enabled": true, "note": "fewer people take BBQ sauce" },
-        { "ingredient": "mustard", "perServe": 3, "servesFrom": ["sausage-sizzle"], "enabled": true, "note": "sausages only" },
-        { "ingredient": "oil", "quantity": 1, "restock": "percentLeft", "enabled": true, "note": "about a bottle per event, for the hotplate" },
-        { "ingredient": "napkins", "quantity": 1000, "enabled": true, "note": "about 1 per serve of food" },
-        { "ingredient": "gloves", "quantity": 100, "enabled": true },
-        { "ingredient": "paper-towels", "quantity": 3, "enabled": true },
-        { "ingredient": "garbage-bags", "quantity": 20, "enabled": true },
-        { "ingredient": "dish-liquid", "quantity": 1, "restock": "percentLeft", "enabled": true }
+        {
+          "ingredient": "tomato-sauce",
+          "perServe": 10,
+          "enabled": true,
+          "note": "~2 teaspoons per sausage or sandwich"
+        },
+        {
+          "ingredient": "bbq-sauce",
+          "perServe": 5,
+          "enabled": true,
+          "note": "fewer people take BBQ sauce"
+        },
+        {
+          "ingredient": "mustard",
+          "perServe": 3,
+          "servesFrom": [
+            "sausage-sizzle"
+          ],
+          "enabled": true,
+          "note": "sausages only"
+        },
+        {
+          "ingredient": "oil",
+          "quantity": 1,
+          "restock": "percentLeft",
+          "enabled": true,
+          "note": "about a bottle per event, for the hotplate"
+        },
+        {
+          "ingredient": "napkins",
+          "quantity": 1000,
+          "enabled": true,
+          "note": "about 1 per serve of food"
+        },
+        {
+          "ingredient": "gloves",
+          "quantity": 100,
+          "enabled": true
+        },
+        {
+          "ingredient": "paper-towels",
+          "quantity": 3,
+          "enabled": true
+        },
+        {
+          "ingredient": "garbage-bags",
+          "quantity": 20,
+          "enabled": true
+        },
+        {
+          "ingredient": "dish-liquid",
+          "quantity": 1,
+          "restock": "percentLeft",
+          "enabled": true
+        }
       ]
     }
   }
