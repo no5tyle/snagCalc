@@ -16,28 +16,34 @@
   <link rel="stylesheet" href="assets/styles.css">
 </head>
 <body>
-  <header class="site-header">
-    <div class="wrap site-title">
-      <!-- The switcher between no5tyle's apps (no5tyle.github.io/shared/app-switcher.js) -->
-      <n5-app-switcher current="snagcalc">
-        <img src="https://no5tyle.github.io/shared/icons/snagcalc.svg" alt="" width="40" height="40">
-      </n5-app-switcher>
-      <div>
-        <h1>Snag Calc</h1>
-        <p class="tagline"><span id="group-name">Scout Group</span> fundraising BBQ planner</p>
-      </div>
+  <!-- The bar across the top, as in no5tyle's other apps: the app switcher and the app's name -->
+  <header class="appbar">
+    <!-- The switcher between no5tyle's apps (no5tyle.github.io/shared/app-switcher.js) -->
+    <n5-app-switcher current="snagcalc">
+      <img src="https://no5tyle.github.io/shared/icons/snagcalc.svg" alt="" width="36" height="36">
+    </n5-app-switcher>
+    <div class="appbar-brand">
+      <h1 class="brand-title">Snag Calc</h1>
+      <p class="brand-sub tagline"><span id="group-name">Scout Group</span> fundraising BBQ planner</p>
     </div>
   </header>
 
+  <div class="frame">
+    <!-- On a computer, a sidebar with what's being planned and the shared options. On a phone the item
+         tabs float at the bottom of the screen and the options sit above the planner -->
+    <aside class="sidebar">
+      <nav id="menu-tabs" class="menu-tabs glass" role="tablist" aria-label="What you're planning"></nav>
+      <section class="toolbar card" aria-label="Shared options">
+        <label>Shop at
+          <select id="store"></select>
+        </label>
+        <label id="buffer-label">Wastage buffer (food)
+          <span class="input-suffix"><input id="buffer" type="number" min="0" max="100" step="1" inputmode="numeric"><span>%</span></span>
+        </label>
+      </section>
+    </aside>
+
   <main class="wrap">
-    <section class="toolbar card" aria-label="Shared options">
-      <label>Shop at
-        <select id="store"></select>
-      </label>
-      <label id="buffer-label">Wastage buffer (food)
-        <span class="input-suffix"><input id="buffer" type="number" min="0" max="100" step="1" inputmode="numeric"><span>%</span></span>
-      </label>
-    </section>
 
     <nav class="tabs" role="tablist" aria-label="View">
       <button role="tab" id="tab-plan" aria-controls="panel-plan" aria-selected="true">Plan</button>
@@ -73,13 +79,12 @@
       </div>
     </section>
   </main>
+  </div>
 
   <footer class="wrap site-footer">
     <p>Prices change over time and between stores, so check them before you shop. Your settings are saved in this browser only.
       <button class="link" data-open-wizard>Check prices step by step</button></p>
   </footer>
-
-  <nav id="menu-tabs" class="menu-tabs glass" role="tablist" aria-label="What you're planning"></nav>
 
   <dialog id="wizard" class="wizard" aria-labelledby="wizard-title"></dialog>
 

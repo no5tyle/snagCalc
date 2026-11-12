@@ -33,7 +33,7 @@ html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
 body {
   margin: 0;
   /* The page fills the screen (viewport-fit=cover), so keep content clear of notches */
-  padding: env(safe-area-inset-top) env(safe-area-inset-right) 0 env(safe-area-inset-left);
+  padding: 0 env(safe-area-inset-right) 0 env(safe-area-inset-left);
   background: var(--bg);
   color: var(--text);
   font-family: var(--font);
@@ -44,13 +44,22 @@ body {
 
 .wrap { max-width: 960px; margin: 0 auto; padding: 0 16px; }
 
-/* A large title, as the phone's apps have, rather than a coloured band */
-.site-header { position: relative; z-index: 10; padding: 20px 0 12px; }
-/* The app switcher beside the large title */
-.site-title { display: flex; align-items: center; gap: 14px; }
-.site-title n5-app-switcher { --n5-switch-size: 44px; }
-.site-header h1 { margin: 0; font-size: 2.125rem; font-weight: 700; line-height: 1.15; letter-spacing: -0.01em; }
-.tagline { margin: 2px 0 0; color: var(--muted); font-size: 1.0625rem; }
+/* The bar across the top, sized as in every no5tyle app (--n5-bar-* in the shared stylesheet) */
+.appbar {
+  position: sticky; top: 0; z-index: 30;
+  display: flex; align-items: center; gap: 12px;
+  height: calc(var(--n5-bar-height) + env(safe-area-inset-top));
+  margin: 0 calc(-1 * env(safe-area-inset-right)) 0 calc(-1 * env(safe-area-inset-left));
+  padding: env(safe-area-inset-top) calc(var(--n5-bar-pad) + env(safe-area-inset-right)) 0 calc(var(--n5-bar-pad) + env(safe-area-inset-left));
+  border-bottom: 0.5px solid var(--border);
+  background: var(--bar-bg);
+  -webkit-backdrop-filter: var(--bar-filter); backdrop-filter: var(--bar-filter);
+}
+.appbar n5-app-switcher { --n5-switch-size: var(--n5-bar-icon); }
+.appbar-brand { display: flex; flex-direction: column; min-width: 0; line-height: 1.25; }
+.brand-title { margin: 0; font-size: var(--n5-bar-title-size); font-weight: 700; letter-spacing: -0.01em; white-space: nowrap; }
+.brand-sub { margin: 0; overflow: hidden; color: var(--muted); font-size: var(--n5-bar-sub-size); white-space: nowrap; text-overflow: ellipsis; }
+
 
 .card {
   margin-bottom: 0.75rem;
@@ -150,7 +159,9 @@ input[type=number]:focus-visible, select:focus-visible { outline: none; }
 @media (prefers-reduced-motion: reduce) { .menu-tabs button { transition: none; } }
 
 /* Keep the end of the page clear of the floating tabs */
-.site-footer { padding-bottom: calc(var(--tab-bar-height) + 1.5rem); }
+@media (max-width: 899.98px) {
+  .site-footer { padding-bottom: calc(var(--tab-bar-height) + 1.5rem); }
+}
 
 .item-grid { display: grid; gap: 12px; }
 .item-row { display: grid; grid-template-columns: minmax(140px, 1.2fr) repeat(2, minmax(120px, 1fr)); gap: 8px 12px; align-items: end; padding-bottom: 12px; border-bottom: 1px solid var(--border-soft); }
@@ -274,7 +285,7 @@ input[type=checkbox].switch:checked::after { transform: translateX(20px); }
 
 @media print {
   :root { color-scheme: light; }
-  .site-header .tagline, .toolbar, .tabs, .menu-tabs, .hint.small, .actions, .site-footer, #panel-settings, .stock-grid, .hint { display: none !important; }
+  .appbar .brand-sub, n5-app-switcher, .toolbar, .tabs, .menu-tabs, .hint.small, .actions, .site-footer, #panel-settings, .stock-grid, .hint { display: none !important; }
   body { background: #fff; color: #000; }
   .card { padding: 0; }
   .stat { background: none; padding: 0; }
@@ -371,6 +382,57 @@ dialog.wizard::backdrop { background: rgba(0, 0, 0, 0.35); -webkit-backdrop-filt
 dialog.wizard.compact { scroll-padding-bottom: 64px; }
 .wizard.compact .wizard-actions { position: sticky; bottom: 0; margin: 0 -16px -14px; padding: 8px 16px 14px; background: var(--surface); }
 .wizard.compact ul.changes { max-height: 30vh; }
+/* ---------------------------------------------------------------- The app frame */
+/* Phones: the shorter bar every app has there */
+@media (max-width: 899.98px) {
+  .appbar {
+    height: calc(var(--n5-bar-height-compact) + env(safe-area-inset-top));
+    padding-left: calc(var(--n5-bar-pad-compact) + env(safe-area-inset-left));
+    padding-right: calc(var(--n5-bar-pad-compact) + env(safe-area-inset-right));
+    gap: 10px;
+  }
+  .appbar n5-app-switcher { --n5-switch-size: var(--n5-bar-icon-compact); }
+  /* The options and the planner, as before: the sidebar's pieces fall into the page */
+  .sidebar { display: contents; }
+  .frame { padding-top: 12px; }
+  .frame > .sidebar > .toolbar { max-width: calc(960px - 32px); margin: 0 16px 0.75rem; }
+}
+@media (min-width: 600px) and (max-width: 899.98px) {
+  .frame > .sidebar > .toolbar { margin-inline: max(16px, calc((100% - 928px) / 2)); }
+}
+
+/* Computers: the sidebar beside the planner, as Beacon and the Program Builder have */
+@media (min-width: 900px) {
+  .frame { display: grid; grid-template-columns: 260px minmax(0, 1fr); align-items: start; }
+  .sidebar {
+    position: sticky; top: var(--n5-bar-height);
+    display: flex; flex-direction: column; gap: 12px;
+    height: calc(100vh - var(--n5-bar-height)); overflow-y: auto;
+    padding: 16px 12px;
+    border-right: 0.5px solid var(--border);
+  }
+  .frame > main { width: 100%; padding-top: 16px; padding-inline: 24px; }
+  .toolbar { grid-template-columns: 1fr; margin: 0; }
+  /* The item tabs become the sidebar's list of pages */
+  .menu-tabs {
+    position: static; display: flex; flex-direction: column; gap: 2px;
+    height: auto; max-width: none; margin: 0; padding: 0;
+    background: none; box-shadow: none; -webkit-backdrop-filter: none; backdrop-filter: none;
+    border-radius: 0;
+  }
+  .menu-tabs button {
+    flex: none; flex-direction: row; justify-content: flex-start; gap: 12px;
+    min-height: 44px; padding: 0 14px;
+    border-radius: var(--radius);
+    color: var(--text); font-size: 0.9375rem; font-weight: 500; letter-spacing: 0;
+  }
+  .menu-tabs .icon { font-size: 1.25rem; }
+  .menu-tabs button:hover { background: var(--hover); }
+  .menu-tabs button[aria-selected=true] { background: var(--tint-fill); color: var(--tint); font-weight: 600; }
+  .menu-tabs button:active { transform: none; }
+  .site-footer { margin-left: 260px; padding: 0 24px 24px; max-width: none; }
+}
+
 @media print { dialog.wizard { display: none !important; } }
 
 /* Text fields match the number fields */
