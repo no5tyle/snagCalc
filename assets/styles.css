@@ -45,7 +45,10 @@ body {
 .wrap { max-width: 960px; margin: 0 auto; padding: 0 16px; }
 
 /* A large title, as the phone's apps have, rather than a coloured band */
-.site-header { padding: 20px 0 12px; }
+.site-header { position: relative; z-index: 10; padding: 20px 0 12px; }
+/* The app switcher beside the large title */
+.site-title { display: flex; align-items: center; gap: 14px; }
+.site-title n5-app-switcher { --n5-switch-size: 44px; }
 .site-header h1 { margin: 0; font-size: 2.125rem; font-weight: 700; line-height: 1.15; letter-spacing: -0.01em; }
 .tagline { margin: 2px 0 0; color: var(--muted); font-size: 1.0625rem; }
 

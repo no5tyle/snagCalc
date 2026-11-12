@@ -12,13 +12,20 @@
   <meta name="description" content="Fundraising BBQ shopping list and restock calculator">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌭</text></svg>">
   <link rel="stylesheet" href="https://no5tyle.github.io/shared/no5tyle.css">
+  <script src="https://no5tyle.github.io/shared/app-switcher.js" defer></script>
   <link rel="stylesheet" href="assets/styles.css">
 </head>
 <body>
   <header class="site-header">
-    <div class="wrap">
-      <h1>Snag Calc</h1>
-      <p class="tagline"><span id="group-name">Scout Group</span> fundraising BBQ planner</p>
+    <div class="wrap site-title">
+      <!-- The switcher between no5tyle's apps (no5tyle.github.io/shared/app-switcher.js) -->
+      <n5-app-switcher current="snagcalc">
+        <img src="https://no5tyle.github.io/shared/icons/snagcalc.svg" alt="" width="40" height="40">
+      </n5-app-switcher>
+      <div>
+        <h1>Snag Calc</h1>
+        <p class="tagline"><span id="group-name">Scout Group</span> fundraising BBQ planner</p>
+      </div>
     </div>
   </header>
 
