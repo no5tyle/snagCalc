@@ -721,9 +721,39 @@ function addCustomItem(form) {
   $('#custom-items [name=name]')?.focus();
 }
 
-function removeCustomItem(id) {
+/**
+ * Asks "are you sure?" in Snag Calc's own dialog rather than the browser's confirm box. Resolves true when
+ * the action is confirmed; Cancel, Escape or a tap outside resolve false.
+ */
+function confirmAction({ title, message = '', confirmLabel, danger = false }) {
+  const dlg = $('#confirm');
+  $('#confirm-title').textContent = title;
+  $('#confirm-text').textContent = message;
+  $('#confirm-text').hidden = !message;
+  const ok = $('#confirm-ok');
+  ok.textContent = confirmLabel;
+  ok.classList.toggle('danger', danger);
+  dlg.returnValue = 'cancel';
+  return new Promise((resolve) => {
+    const onClose = () => resolve(dlg.returnValue === 'ok');
+    dlg.addEventListener('close', onClose, { once: true });
+    if (typeof dlg.showModal === 'function') dlg.showModal();
+    else dlg.setAttribute('open', '');
+    // Something that can't be undone starts on Cancel, so Enter doesn't go ahead by accident
+    (danger ? dlg.querySelector('[value=cancel]') : ok).focus();
+  });
+}
+
+async function removeCustomItem(id) {
   const item = settings.customItems.find((it) => it.id === id);
-  if (!item || !confirm(`Remove ${item.name}?`)) return;
+  if (!item) return;
+  const sure = await confirmAction({
+    title: `Remove ${item.name}?`,
+    message: 'It comes off every list, with its price and any counts entered for it.',
+    confirmLabel: 'Remove',
+    danger: true,
+  });
+  if (!sure) return;
   settings.customItems = settings.customItems.filter((it) => it.id !== id);
   const productId = `${id}-pack`;
   delete settings.prices[productId];
@@ -1228,8 +1258,19 @@ function bindInputs() {
 
   for (const t of VIEWS) $(`#tab-${t}`).addEventListener('click', () => selectView(t));
 
-  $('#reset').addEventListener('click', () => {
-    if (!confirm('Reset all settings, stock counts and price overrides on every tab?')) return;
+  // A tap on the dimmed page around the "are you sure?" dialog cancels it
+  $('#confirm').addEventListener('click', (e) => {
+    if (e.target === e.currentTarget) e.currentTarget.close('cancel');
+  });
+
+  $('#reset').addEventListener('click', async () => {
+    const sure = await confirmAction({
+      title: 'Reset everything?',
+      message: 'All settings, stock counts and your own prices go back to the start, on every tab.',
+      confirmLabel: 'Reset',
+      danger: true,
+    });
+    if (!sure) return;
     settings = defaultSettings();
     save();
     init();

@@ -88,6 +88,18 @@
 
   <dialog id="wizard" class="wizard" aria-labelledby="wizard-title"></dialog>
 
+  <!-- "Are you sure?" in Snag Calc's own style (confirmAction in app.js), not the browser's confirm box -->
+  <dialog id="confirm" class="confirm-dialog" aria-labelledby="confirm-title" aria-describedby="confirm-text">
+    <form method="dialog">
+      <h2 id="confirm-title"></h2>
+      <p id="confirm-text"></p>
+      <div class="confirm-actions">
+        <button class="secondary" value="cancel">Cancel</button>
+        <button class="primary" id="confirm-ok" value="ok"></button>
+      </div>
+    </form>
+  </dialog>
+
   <script type="module" src="assets/app.js"></script>
 </body>
 </html>
