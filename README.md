@@ -22,6 +22,10 @@ Pick what you're planning from the tabs at the top: **Sausages**, **Egg & bacon*
 2. In the repo, go to **Settings → Pages**. Under **Build and deployment**, choose **Deploy from a branch**, then pick `main` and the `/ (root)` folder.
 3. The site appears at `https://<user>.github.io/snagCalc/`.
 
+## Look
+
+Snag Calc shares one look with [Beacon](https://no5tyle.github.io/Beacon/), the [Program Builder](https://no5tyle.github.io/programmer/) and the [homepage](https://no5tyle.github.io/): Apple's system colours (light and dark), rounded cards, capsule buttons and Liquid Glass. Those colours, the rounding and the font come from the shared stylesheet, https://no5tyle.github.io/shared/no5tyle.css (kept in [no5tyle.github.io](https://github.com/no5tyle/no5tyle.github.io)), which `index.html` links before `assets/styles.css`. `assets/styles.css` has only Snag Calc's own styles.
+
 ## Running locally
 
 The page loads `data/catalogue.json` with `fetch`, so it needs a web server. Opening `index.html` straight from disk won't work.

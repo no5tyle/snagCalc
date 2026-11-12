@@ -1,58 +1,17 @@
 /*
-  Snag Calc styles, following Beacon's Liquid Glass look (Apple's iOS 26 system colours): a grouped grey
-  background with white rounded cards, capsule buttons, a segmented control for the views, and the
+  Snag Calc styles. The look it shares with Beacon, the Program Builder and the homepage (Apple's iOS 26
+  system colours light and dark, the tint, rounding, Liquid Glass and the font) comes from
+  https://no5tyle.github.io/shared/no5tyle.css, linked in index.html before this file. Here: a grouped
+  grey background with white rounded cards, capsule buttons, a segmented control for the views, and the
   item tabs floating at the bottom of the screen in glass.
 */
 :root {
-  color-scheme: light dark;
-
-  --bg: #f2f2f7;
-  --surface: #fff;
-  --surface-2: #f7f7fa;
-  --surface-3: #e5e5ea;
-  --fill: rgba(118, 118, 128, 0.12);
-  --fill-strong: rgba(118, 118, 128, 0.2);
-  --border: rgba(60, 60, 67, 0.16);
-  --border-soft: rgba(60, 60, 67, 0.1);
-  --input-border: rgba(60, 60, 67, 0.2);
-  --text: #000;
-  --text-2: #3c3c43;
-  --muted: #6e6e73;
-  --faint: #aeaeb2;
-
-  --tint: #007aff;
-  --primary-hover: #0066d6;
-  --primary-text: #fff;
-  --tint-fill: rgba(0, 122, 255, 0.12);
-  --tint-fill-strong: rgba(0, 122, 255, 0.2);
-  --focus-ring: rgba(0, 122, 255, 0.35);
-  --success: #248a3d;
-
-  --warning-bg: rgba(255, 149, 0, 0.14);
-  --warning-text: #8a4b00;
-  --success-bg: rgba(52, 199, 89, 0.14);
-  --success-text: #1b6b30;
+  /* Snag Calc's own names for the shared notice colours */
+  --warning-bg: var(--alert-warning-bg);
+  --warning-text: var(--alert-warning-text);
+  --success-bg: var(--alert-success-bg);
+  --success-text: var(--alert-success-text);
   --switch-on: #34c759;
-
-  --shadow: 0 10px 40px rgba(0, 0, 0, 0.16);
-
-  /* Concentric rounding: controls are capsules, fields rounded, cards and panels rounder */
-  --radius: 0.75rem;
-  --radius-lg: 1.375rem;
-
-  /* Liquid Glass: nearly clear, what's behind blurred and made more vivid, lit like a bevelled lens */
-  --glass-bg: rgba(255, 255, 255, 0.2);
-  --glass-sheen: linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0) 40%);
-  --glass-shadow:
-    inset 1px 1px 0 rgba(255, 255, 255, 0.45), inset -1px -1px 0 rgba(255, 255, 255, 0.1),
-    inset 0 8px 32px rgba(255, 255, 255, 0.15), 0 0 0 0.5px rgba(0, 0, 0, 0.08),
-    0 12px 40px rgba(0, 0, 0, 0.25);
-  --glass-filter: blur(12px) saturate(200%) brightness(1.1) contrast(1.1);
-  --glass-text: #000;
-  --glass-active-bg: rgba(0, 0, 0, 0.06);
-  --glass-active-text: var(--tint);
-
-  --font: -apple-system, system-ui, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", "Segoe UI", Roboto, Arial, sans-serif;
 
   /* Room the floating tab bar takes at the bottom, gap included */
   --tab-bar-bottom: max(env(safe-area-inset-bottom), 0.75rem);
@@ -62,42 +21,7 @@
 
 @media screen and (prefers-color-scheme: dark) {
   :root {
-    --bg: #000;
-    --surface: #1c1c1e;
-    --surface-2: #2c2c2e;
-    --surface-3: #3a3a3c;
-    --fill: rgba(118, 118, 128, 0.24);
-    --fill-strong: rgba(118, 118, 128, 0.36);
-    --border: rgba(84, 84, 88, 0.6);
-    --border-soft: rgba(84, 84, 88, 0.4);
-    --input-border: rgba(84, 84, 88, 0.65);
-    --text: #fff;
-    --text-2: #ebebf5;
-    --muted: #98989f;
-    --faint: #636366;
-
-    --tint: #0a84ff;
-    --primary-hover: #409cff;
-    --tint-fill: rgba(10, 132, 255, 0.18);
-    --tint-fill-strong: rgba(10, 132, 255, 0.28);
-    --focus-ring: rgba(10, 132, 255, 0.45);
-    --success: #30d158;
-
-    --warning-bg: rgba(255, 159, 10, 0.16);
-    --warning-text: #ffc670;
-    --success-bg: rgba(48, 209, 88, 0.16);
-    --success-text: #7ee29b;
     --switch-on: #30d158;
-
-    --shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
-
-    /* Tinted a little dark, so text on the glass stays readable over bright content behind it */
-    --glass-bg: rgba(18, 18, 20, 0.4);
-    --glass-shadow:
-      inset 1px 1px 0 rgba(255, 255, 255, 0.45), inset -1px -1px 0 rgba(255, 255, 255, 0.1),
-      inset 0 8px 32px rgba(255, 255, 255, 0.15), 0 12px 40px rgba(0, 0, 0, 0.25);
-    --glass-text: #fff;
-    --glass-active-bg: rgba(255, 255, 255, 0.14);
   }
 }
 
