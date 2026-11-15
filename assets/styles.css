@@ -600,3 +600,19 @@ button.link.edit { margin-left: 8px; }
 /* In a list's cost column the badge sits on its own line, so the product name keeps its room */
 .shop-item .cost .sub { max-width: 7rem; margin-left: auto; white-space: normal; font-size: .78rem; line-height: 1.3; }
 .shop-item .cost .badge-special { display: block; width: fit-content; margin: 2px 0 2px auto; }
+
+/* ---------------------------------------------------------------- Comparing pack sizes and brands */
+.badge-best { display: inline-block; padding: 1px 8px; border-radius: 999px; background: var(--success-bg); color: var(--success-text); font-size: .72rem; font-weight: 600; }
+#price-table tr.group th { padding-top: 18px; border-bottom-color: var(--border); color: var(--text); font-size: 1.0625rem; font-weight: 700; text-align: left; }
+#price-table tr.group th .sub { font-size: .8rem; }
+#price-table .unit-price { margin-top: 2px; color: var(--text-2); }
+#price-table .unit-price .sub { display: inline; margin-left: 6px; }
+@media (max-width: 640px) {
+  #price-table tr.group { display: block; padding: 18px 0 6px; border-bottom: 1px solid var(--border); }
+  #price-table tr.group th { display: block; padding: 0; border: 0; }
+}
+@media (max-width: 640px) {
+  /* The price, when it was checked and the unit price stack under the store, each on its own line */
+  #price-table td.num { max-width: 64vw; white-space: normal; }
+  #price-table .unit-price .sub { display: block; margin-left: 0; }
+}

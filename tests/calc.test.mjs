@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { stockLeft, carryForward, combineResults, byStore, stockShare, sumUsage, withCustomMenus, effectiveRecipe, cheapestPacks, calculate, calculateRestock, calculateItems, wizardProducts, applyWizardPrices, round2, withCustomItems, expectedDay2, recipeUsage, itemsUsage, leftoverEstimate } from '../assets/calc.js';
+import { unitPrice, unitBasis, compareProducts, purchaseFor, pricedProducts, stockLeft, carryForward, combineResults, byStore, stockShare, sumUsage, withCustomMenus, effectiveRecipe, cheapestPacks, calculate, calculateRestock, calculateItems, wizardProducts, applyWizardPrices, round2, withCustomItems, expectedDay2, recipeUsage, itemsUsage, leftoverEstimate } from '../assets/calc.js';
 
 const catalogue = JSON.parse(readFileSync(new URL('../data/catalogue.json', import.meta.url)));
 // Listed prices change every week, so tests read them rather than hard-coding them
@@ -144,8 +144,10 @@ test('items: drinks use their own quantities and sale prices', () => {
   const r = calculateItems({ catalogue, menuId: 'drinks', store: 'woolworths', itemOverrides: { pepsi: { quantity: 30, salePrice: 2.5 } } });
   const pepsi = r.lines.find((l) => l.id === 'pepsi');
   assert.equal(pepsi.needed, 30);
-  assert.equal(pepsi.purchase.units, 48); // two 24 packs
-  assert.equal(pepsi.purchase.cost, round2(2 * listed('ww-pepsi-24')));
+  // Whichever mix of Woolworths packs covers 30 cans for least: never more than two 24 packs
+  assert.ok(pepsi.purchase.units >= 30);
+  assert.ok(pepsi.purchase.packs.every(({ product }) => product.store === 'woolworths'));
+  assert.ok(pepsi.purchase.cost <= round2(2 * listed('ww-pepsi-24')));
   const others = r.lines.filter((l) => l.id !== 'pepsi').reduce((s, l) => s + l.needed * l.salePrice, 0);
   assert.equal(r.revenue, 30 * 2.5 + others);
 });
@@ -487,4 +489,67 @@ test('bottles checked by eye count down from what the day opened with', () => {
   const all = combineResults([{ menuId: 'consumables', result: r }], { catalogue });
   assert.equal(carryForward({}, all, 'today').oil, 2); // nothing bought, so the opening figure stands
   assert.equal(carryForward({}, all, 'next').oil, 1.2);
+});
+
+test('unit prices: per 100 for weight and volume, per one for everything else', () => {
+  assert.deepEqual(unitBasis({ unit: 'ml' }), { size: 100, label: '100 ml' });
+  assert.deepEqual(unitBasis({ unit: 'cans' }), { size: 1, label: 'can' });
+  assert.deepEqual(unitBasis({ unit: 'slices' }), { size: 1, label: 'slice' });
+  assert.equal(unitPrice({ packSize: 2000, price: 6 }, { unit: 'ml' }), 0.3);
+  assert.equal(unitPrice({ packSize: 30, price: 27 }, { unit: 'cans' }), 0.9);
+  assert.equal(unitPrice({ packSize: 30, price: null }, { unit: 'cans' }), null);
+});
+
+test('compareProducts sorts by unit price across stores, sizes and brands', () => {
+  const ing = {
+    unit: 'ml',
+    products: [
+      { id: 'small', store: 'a', packSize: 500, price: 2.2, priceUpdated: '2026-11-15' },
+      { id: 'big', store: 'b', packSize: 2000, price: 6, regularPrice: 8, priceUpdated: '2026-11-15' },
+      { id: 'posh', store: 'a', packSize: 500, price: 5.35, priceUpdated: '2026-11-15' },
+      { id: 'unknown', store: 'a', packSize: 500, price: null },
+    ],
+  };
+  const rows = compareProducts(ing);
+  assert.deepEqual(rows.map((r) => r.product.id), ['big', 'small', 'posh', 'unknown']);
+  assert.deepEqual(rows.map((r) => r.cheapest), [true, false, false, false]);
+  assert.equal(rows[0].unitPrice, 0.3);
+  assert.equal(rows[0].usualUnitPrice, 0.4);
+  assert.equal(rows[3].unitPrice, null);
+  // On the user's own prices: the small one at $1 wins, and is no longer a listed special
+  const own = compareProducts(ing, pricedProducts(ing.products, { small: 1 }));
+  assert.equal(own[0].product.id, 'small');
+  assert.equal(compareProducts({ unit: 'cans', products: [{ id: 'only', packSize: 24, price: 23 }] })[0].cheapest, false);
+  // An estimate can sort first, but "cheapest" goes to the best price someone has checked
+  const guess = compareProducts({ unit: 'cans', products: [{ id: 'guess', packSize: 30, price: 20, priceUpdated: null }, { id: 'sure', packSize: 24, price: 23, priceUpdated: '2026-11-15' }] });
+  assert.deepEqual(guess.map((r) => [r.product.id, r.cheapest]), [['guess', false], ['sure', true]]);
+});
+
+test('the sauces can be compared across Fountain, Masterfoods, Rosella and Ozesauce', () => {
+  const names = (id) => catalogue.ingredients[id].products.map((p) => p.name).join(' | ');
+  for (const brand of ['Fountain', 'Masterfoods', 'Rosella', 'Ozesauce']) assert.match(names('tomato-sauce'), new RegExp(brand, 'i'));
+  for (const brand of ['Fountain', 'Masterfoods']) assert.match(names('bbq-sauce'), new RegExp(brand, 'i'));
+  // More than one size of each soft drink at Woolworths
+  for (const id of ['pepsi', 'pepsi-max', 'solo', 'coca-cola', 'coke-no-sugar', 'sprite']) {
+    const sizes = new Set(catalogue.ingredients[id].products.filter((p) => p.store === 'woolworths').map((p) => p.packSize));
+    assert.ok(sizes.size >= 2, `${id} has one Woolworths size`);
+  }
+});
+
+test('a product with no price yet is never bought while another is priced', () => {
+  const r = calculateItems({ catalogue, menuId: 'consumables', store: 'woolworths', servesByMenu: { 'sausage-sizzle': 200 } });
+  const sauce = r.lines.find((l) => l.id === 'tomato-sauce');
+  assert.ok(sauce.purchase.packs.every(({ product }) => Number.isFinite(product.price)));
+  assert.ok(sauce.purchase.cost > 0);
+});
+
+test('cheapest store: on a tie, a checked price beats an estimate', () => {
+  const products = [
+    { id: 'guess', store: 'a', packSize: 10, price: 5, priceUpdated: null },
+    { id: 'sure', store: 'b', packSize: 10, price: 5, priceUpdated: '2026-11-15' },
+  ];
+  assert.equal(purchaseFor(10, products, 'cheapest', ['a', 'b']).store, 'b');
+  // A cheaper guess still wins
+  products[0].price = 4;
+  assert.equal(purchaseFor(10, products, 'cheapest', ['a', 'b']).store, 'a');
 });

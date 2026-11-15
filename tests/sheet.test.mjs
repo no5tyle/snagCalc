@@ -5,6 +5,7 @@ import { combineResults, calculate, calculateRestock, calculateItems } from '../
 import { buildSheet, toTSV } from '../assets/sheet.js';
 
 const catalogue = JSON.parse(readFileSync(new URL('../data/catalogue.json', import.meta.url)));
+const fullCatalogue = catalogue;
 
 // Minimal spreadsheet evaluator covering the functions the export uses.
 function evaluate(rows) {
@@ -131,9 +132,19 @@ test('toTSV separates cells with tabs and strips tabs and newlines from text', (
   assert.equal(toTSV([['a', 1], ['b\tc', '=A1'], ['d\ne']]), 'a\t1\nb c\t=A1\nd e');
 });
 
+// One product of each item per store. The sheet keeps the products the app chose, so it only keeps matching
+// the app after a number changes if there's no other size the app would switch to
+const oneSize = (cat) => ({
+  ...cat,
+  ingredients: Object.fromEntries(
+    Object.entries(cat.ingredients).map(([id, ing]) => [id, { ...ing, products: ing.products.filter((p, i, all) => all.findIndex((q) => q.store === p.store) === i) }])
+  ),
+});
+
 test('consumables sheet scales sauces from the food serves cells', () => {
+  const catalogue = oneSize(fullCatalogue);
   const servesByMenu = { 'sausage-sizzle': 200, 'egg-bacon': 100 };
-  const result = calculateItems({ catalogue, menuId: 'consumables', store: 'cheapest', servesByMenu, bufferPct: 5 });
+  const result = calculateItems({ catalogue, menuId: 'consumables', store: 'drakes', servesByMenu, bufferPct: 5 });
   const foodServes = [
     { id: 'sausage-sizzle', label: 'Sausages to sell', serves: 200 },
     { id: 'egg-bacon', label: 'Sandwiches to sell', serves: 100 },
@@ -142,7 +153,7 @@ test('consumables sheet scales sauces from the food serves cells', () => {
   near(labelled(rows, evaluate(rows), 'Shopping total'), result.totalCost);
   // Doubling the sandwiches in the sheet matches the app with double sandwiches
   rows[2][1] = 200;
-  const more = calculateItems({ catalogue, menuId: 'consumables', store: 'cheapest', servesByMenu: { ...servesByMenu, 'egg-bacon': 200 }, bufferPct: 5 });
+  const more = calculateItems({ catalogue, menuId: 'consumables', store: 'drakes', servesByMenu: { ...servesByMenu, 'egg-bacon': 200 }, bufferPct: 5 });
   near(labelled(rows, evaluate(rows), 'Shopping total'), more.totalCost);
 });
 
@@ -184,4 +195,11 @@ test('restock sheet uses the wording it is given for a later day or a top-up', (
   assert.ok(rows.some((r) => r[0] === 'Rest of today, % of sales so far'));
   assert.ok(rows.some((r) => r.includes('The rest of today need')));
   assert.ok(!rows.flat().some((c) => /day [12]/i.test(String(c))));
+});
+
+test('a line bought as a mix of sizes is written as fixed rows that still add up', () => {
+  // 4,200 ml of tomato sauce at Drakes is cheapest as a mix of bottle sizes
+  const result = calculateItems({ catalogue, menuId: 'consumables', store: 'drakes', servesByMenu: { 'sausage-sizzle': 400 }, bufferPct: 5 });
+  const rows = buildSheet({ kind: 'items', mode: 'plan', result, title: 'Consumables', bufferPct: 5, foodServes: [{ id: 'sausage-sizzle', label: 'Sausages to sell', serves: 400 }] });
+  near(labelled(rows, evaluate(rows), 'Shopping total'), result.totalCost);
 });

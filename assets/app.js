@@ -10,6 +10,9 @@ import {
   priceStatus,
   priceNotes,
   onSpecial,
+  pricedProducts,
+  compareProducts,
+  unitBasis,
   calculateItems,
   effectiveRecipe,
   effectiveItems,
@@ -385,7 +388,7 @@ function resultsCard(result, { restock = false, title, counted = {}, shared = ne
       <button class="secondary" data-copy="sheet">Copy for spreadsheet</button>
       <button class="secondary" data-print>Print</button>
     </div>
-    <p class="hint small">"Copy for spreadsheet" copies a table with formulas. Paste it into cell A1 of an empty Excel or Google Sheets sheet. Change the numbers there and the packs, costs and totals update.</p>
+    <p class="hint small">"Copy for spreadsheet" copies a table with formulas. Paste it into cell A1 of an empty Excel or Google Sheets sheet. Change the numbers there and the packs, costs and totals update, keeping the products chosen here.</p>
   </div>`;
 }
 
@@ -1433,6 +1436,9 @@ async function deleteRecipe(id) {
   renderMenu();
 }
 
+/** A unit price: to the cent, or a tenth of a cent when it's under 10c. */
+const unitMoney = (n) => (n < 0.1 ? `${(n * 100).toFixed(1)}c` : money(n));
+
 /** A product's pack size on the shared price list, before the user's own count. */
 const basePackSize = (productId) =>
   Object.values(baseCatalogue.ingredients)
@@ -1454,7 +1460,15 @@ function renderPriceTable() {
   const ids = [...new Set(menus.flatMap((id) => menuDef(id).recipe.filter((r) => isOn(id, r.ingredient)).map((r) => r.ingredient)))];
   let rows = '';
   for (const id of ids) {
-    for (const p of catalogue.ingredients[id].products) {
+    const ing = catalogue.ingredients[id];
+    // Cheapest per unit first, on the prices in use (your own where you've entered one)
+    const compared = compareProducts(ing, pricedProducts(ing.products, settings.prices, settings.donated));
+    const per = unitBasis(ing).label;
+    if (compared.length > 1) {
+      rows += `<tr class="group"><th colspan="4" scope="colgroup">${esc(ing.name)}<span class="sub">${compared.length} to choose from, cheapest per ${esc(per)} first</span></th></tr>`;
+    }
+    for (const { product: priced, unitPrice: each, usualUnitPrice, cheapest } of compared) {
+      const p = ing.products.find((x) => x.id === priced.id);
       const override = settings.prices[p.id];
       rows += `<tr>
         <td>${esc(p.name)}<span class="sub">${esc(p.packLabel)}</span></td>
@@ -1462,19 +1476,27 @@ function renderPriceTable() {
         <td class="num">${money(p.price)}<span class="sub">${
           p.custom
             ? 'added by you'
-            : !p.priceUpdated
-              ? '<span class="badge-estimate">estimate</span>'
-              : `${priceStatus(p, todayISO()) === 'stale' ? '<span class="badge-estimate">old</span> ' : ''}checked ${esc(fmtDate(p.priceUpdated))}`
+            : p.price == null
+              ? '<span class="badge-estimate">no price yet</span>'
+              : !p.priceUpdated
+                ? '<span class="badge-estimate">estimate</span>'
+                : `${priceStatus(p, todayISO()) === 'stale' ? '<span class="badge-estimate">old</span> ' : ''}checked ${esc(fmtDate(p.priceUpdated))}`
         }</span>${
           Number.isFinite(p.regularPrice) && p.regularPrice > p.price
             ? `<span class="sub"><span class="badge-special">special</span> usually ${money(p.regularPrice)}</span>`
             : ''
+        }${
+          each == null
+            ? ''
+            : `<span class="sub unit-price" data-unit-price="${esc(p.id)}">${cheapest ? '<span class="badge-best">cheapest</span> ' : ''}${unitMoney(each)} per ${esc(per)}${
+                usualUnitPrice != null ? `<span class="sub">usually ${unitMoney(usualUnitPrice)}</span>` : ''
+              }</span>`
         }</td>
         <td class="your-price"><span class="input-prefix"><span>$</span><input type="number" min="0" step="0.01" inputmode="decimal" data-price="${esc(p.id)}"
           value="${valueAttr(override)}" placeholder="${p.price ?? ''}" aria-label="Your price for ${esc(p.name)} at ${esc(storeName(p.store))}"></span>
           <label class="donated-check"><input type="checkbox" data-donated="${esc(p.id)}" ${settings.donated[p.id] ? 'checked' : ''}>Donated</label>${
             p.packApprox
-              ? `<label class="pack-size">Usable ${esc(catalogue.ingredients[id].unit)} per pack
+              ? `<label class="pack-size">Usable ${esc(ing.unit)} per pack
             <input type="number" min="1" step="1" inputmode="numeric" data-pack="${esc(p.id)}" value="${valueAttr(settings.packs[p.id])}" placeholder="${basePackSize(p.id) ?? ''}"></label>`
               : ''
           }</td>
@@ -1485,7 +1507,8 @@ function renderPriceTable() {
     ? `<thead><tr><th>Product</th><th>Store</th><th class="num">Listed price</th><th>Your price</th></tr></thead><tbody>${rows}</tbody>`
     : '';
   $('#price-info').textContent =
-    'Listed prices come from the shared price list in this site. Prices marked "estimate" haven\'t been checked against the store yet. ' +
+    'Each item lists the pack sizes and brands on the shared price list, cheapest per unit first; the shopping list buys whichever mix costs least. ' +
+    'Prices marked "estimate" haven\'t been checked against the store yet. ' +
     'Enter your own price to override one for this browser. Prices are shared across all tabs. ' +
     'Tick Donated for anything given to the group: it costs nothing on the shopping list, and its price counts as the value of the donation. ' +
     'For bread and bacon you can also set how many usable slices or rashers you get from a pack.';
@@ -1746,8 +1769,20 @@ function isOn(menuId, ingredientId) {
 }
 
 /** The products the wizard asks about: what's switched on in the chosen menus, at the chosen store. */
-const wizardItems = () =>
-  wizardProducts(catalogue, wiz.menus, isOn).filter((e) => wiz.store === 'cheapest' || e.product.store === wiz.store);
+function wizardItems() {
+  const all = wizardProducts(catalogue, wiz.menus, isOn).filter((e) => wiz.store === 'cheapest' || e.product.store === wiz.store);
+  // Many items come in several sizes and brands. Ask about the cheapest per unit of each at each store,
+  // plus anything the user has already priced or marked as donated; the rest can be changed in the table
+  const best = new Set();
+  for (const ing of Object.values(catalogue.ingredients)) {
+    const seen = new Set();
+    for (const { product } of compareProducts(ing)) {
+      if (!seen.has(product.store)) best.add(product.id);
+      seen.add(product.store);
+    }
+  }
+  return all.filter(({ product }) => best.has(product.id) || Number.isFinite(settings.prices[product.id]) || settings.donated[product.id]);
+}
 
 const wizardDonated = (product) => (product.id in wiz.donated ? wiz.donated[product.id] : Boolean(settings.donated[product.id]));
 
@@ -1772,7 +1807,7 @@ function renderWizard() {
 
   if (wiz.step === 0) {
     html = `<h2 id="wizard-title">Check your prices</h2>
-      <p>Snag Calc uses a price for every product. Check each one against your local store so the shopping totals are right. It takes a few minutes, you can stop at any point with Finish, and you can redo it any time from <strong>Recipe &amp; prices</strong>.</p>
+      <p>Snag Calc uses a price for every product. Check the best buy of each item against your local store so the shopping totals are right. It takes a few minutes, you can stop at any point with Finish, and you can redo it any time from <strong>Recipe &amp; prices</strong>.</p>
       <p><strong>What are you planning?</strong></p>
       <div class="menu-choices">${menuIds()
         .map((id) => `<label><input type="checkbox" data-wiz-menu="${esc(id)}" ${wiz.menus.includes(id) ? 'checked' : ''}>${esc(menuTag(id))}</label>`)
@@ -2176,6 +2211,9 @@ function bindInputs() {
     for (const el of e.target.form.querySelectorAll('[data-new-only]')) el.hidden = e.target.value !== '';
   });
 
+  $('#price-table').addEventListener('change', (e) => {
+    if (e.target.dataset.price || e.target.dataset.donated) renderPriceTable();
+  });
   $('#price-table').addEventListener('input', (e) => {
     const donatedId = e.target.dataset.donated;
     if (donatedId) {

@@ -134,6 +134,114 @@
           "url": "https://142.drakes.com.au/lines/fountain-tomato-sauce-squeeze-500ml",
           "priceUpdated": "2026-11-15",
           "regularPrice": 3.65
+        },
+        {
+          "id": "ww-fountain-tomato-2l",
+          "store": "woolworths",
+          "name": "Fountain Tomato Sauce Value Pack 2L",
+          "packSize": 2000,
+          "packLabel": "2L bottle",
+          "price": 6,
+          "stockcode": "175901",
+          "url": null,
+          "priceUpdated": null
+        },
+        {
+          "id": "ww-masterfoods-tomato-500",
+          "store": "woolworths",
+          "name": "MasterFoods Tomato Sauce 500mL",
+          "packSize": 500,
+          "packLabel": "500ml squeeze bottle",
+          "price": 3.5,
+          "stockcode": "99633",
+          "url": null,
+          "priceUpdated": null
+        },
+        {
+          "id": "ww-masterfoods-tomato-920",
+          "store": "woolworths",
+          "name": "MasterFoods Tomato Sauce 920mL",
+          "packSize": 920,
+          "packLabel": "920ml squeeze bottle",
+          "price": 5.4,
+          "stockcode": "258672",
+          "url": null,
+          "priceUpdated": null
+        },
+        {
+          "id": "ww-masterfoods-tomato-2l",
+          "store": "woolworths",
+          "name": "MasterFoods Tomato Sauce 2L",
+          "packSize": 2000,
+          "packLabel": "2L bottle",
+          "price": 8.5,
+          "stockcode": "608987",
+          "url": null,
+          "priceUpdated": null
+        },
+        {
+          "id": "ww-rosella-tomato-500",
+          "store": "woolworths",
+          "name": "Rosella Tomato Sauce Squeezie 500mL",
+          "packSize": 500,
+          "packLabel": "500ml squeeze bottle",
+          "price": 3.25,
+          "stockcode": "207915",
+          "url": null,
+          "priceUpdated": null
+        },
+        {
+          "id": "ww-ozesauce-tomato-500",
+          "store": "woolworths",
+          "name": "Ozesauce Tomato Sauce 500mL",
+          "packSize": 500,
+          "packLabel": "500ml bottle",
+          "price": null,
+          "stockcode": "742407",
+          "url": null,
+          "priceUpdated": null
+        },
+        {
+          "id": "dk-fountain-tomato-2l",
+          "store": "drakes",
+          "name": "Fountain Tomato Sauce 2L",
+          "packSize": 2000,
+          "packLabel": "2L bottle",
+          "price": 6,
+          "url": "https://142.drakes.com.au/lines/fountain-tomato-sauce-2l",
+          "priceUpdated": "2026-11-15",
+          "regularPrice": 8
+        },
+        {
+          "id": "dk-masterfoods-tomato-500",
+          "store": "drakes",
+          "name": "Masterfoods Tomato Sauce Squeeze 500mL",
+          "packSize": 500,
+          "packLabel": "500ml squeeze bottle",
+          "price": 3.5,
+          "url": "https://142.drakes.com.au/lines/masterfoods-tomato-sauce-squeeze-500ml",
+          "priceUpdated": "2026-11-15"
+        },
+        {
+          "id": "dk-masterfoods-tomato-920",
+          "store": "drakes",
+          "name": "Masterfoods Tomato Sauce Squeeze 920mL",
+          "packSize": 920,
+          "packLabel": "920ml squeeze bottle",
+          "price": 5.4,
+          "url": "https://142.drakes.com.au/lines/masterfoods-tomato-sauce-squeeze-920ml",
+          "priceUpdated": "2026-11-15",
+          "regularPrice": 6.5
+        },
+        {
+          "id": "dk-rosella-tomato-500",
+          "store": "drakes",
+          "name": "Rosella Tomato Sauce Squeezy 500mL",
+          "packSize": 500,
+          "packLabel": "500ml squeeze bottle",
+          "price": 5.35,
+          "url": "https://142.drakes.com.au/lines/rosella-tomato-sauce-squeezy-500ml",
+          "priceUpdated": "2026-11-15"
         }
       ]
     },
@@ -166,6 +274,82 @@
           "url": "https://142.drakes.com.au/lines/fountain-barbecue-sauce-squeeze-500ml",
           "priceUpdated": "2026-11-15",
           "regularPrice": 3.65
+        },
+        {
+          "id": "ww-fountain-bbq-2l",
+          "store": "woolworths",
+          "name": "Fountain Barbecue BBQ Sauce Value Pack 2L",
+          "packSize": 2000,
+          "packLabel": "2L bottle",
+          "price": 6,
+          "stockcode": "845672",
+          "url": null,
+          "priceUpdated": null
+        },
+        {
+          "id": "ww-masterfoods-bbq-500",
+          "store": "woolworths",
+          "name": "MasterFoods Barbecue Sauce 500mL",
+          "packSize": 500,
+          "packLabel": "500ml squeeze bottle",
+          "price": 3.5,
+          "stockcode": "99696",
+          "url": null,
+          "priceUpdated": null
+        },
+        {
+          "id": "ww-masterfoods-bbq-920",
+          "store": "woolworths",
+          "name": "MasterFoods Barbecue Sauce 920mL",
+          "packSize": 920,
+          "packLabel": "920ml squeeze bottle",
+          "price": 5.4,
+          "stockcode": "258673",
+          "url": null,
+          "priceUpdated": null
+        },
+        {
+          "id": "ww-masterfoods-bbq-2l",
+          "store": "woolworths",
+          "name": "MasterFoods Barbeque Sauce 2L",
+          "packSize": 2000,
+          "packLabel": "2L bottle",
+          "price": 8.5,
+          "stockcode": "609023",
+          "url": null,
+          "priceUpdated": null
+        },
+        {
+          "id": "dk-fountain-bbq-2l",
+          "store": "drakes",
+          "name": "Fountain Barbecue Sauce 2L",
+          "packSize": 2000,
+          "packLabel": "2L bottle",
+          "price": 6,
+          "url": "https://142.drakes.com.au/lines/fountain-barbecue-sauce-2l",
+          "priceUpdated": "2026-11-15",
+          "regularPrice": 8
+        },
+        {
+          "id": "dk-masterfoods-bbq-500",
+          "store": "drakes",
+          "name": "Masterfoods Barbecue Sauce Squeeze 500mL",
+          "packSize": 500,
+          "packLabel": "500ml squeeze bottle",
+          "price": 3.5,
+          "url": "https://142.drakes.com.au/lines/masterfoods-barbecue-sauce-squeeze-500ml",
+          "priceUpdated": "2026-11-15"
+        },
+        {
+          "id": "dk-masterfoods-bbq-920",
+          "store": "drakes",
+          "name": "Masterfoods Barbecue Sauce Squeeze 920mL",
+          "packSize": 920,
+          "packLabel": "920ml squeeze bottle",
+          "price": 5.4,
+          "url": "https://142.drakes.com.au/lines/masterfoods-barbecue-sauce-squeeze-920ml",
+          "priceUpdated": "2026-11-15",
+          "regularPrice": 6.5
         }
       ]
     },
@@ -196,6 +380,27 @@
           "packLabel": "550g squeeze bottle",
           "price": 5.45,
           "url": "https://142.drakes.com.au/lines/masterfoods-american-mild-mustard-squeeze-550g",
+          "priceUpdated": "2026-11-15"
+        },
+        {
+          "id": "ww-masterfoods-mustard-250",
+          "store": "woolworths",
+          "name": "MasterFoods Mild American Mustard 250g",
+          "packSize": 250,
+          "packLabel": "250g squeeze bottle",
+          "price": 3.5,
+          "stockcode": "36557",
+          "url": null,
+          "priceUpdated": null
+        },
+        {
+          "id": "dk-masterfoods-mustard-250",
+          "store": "drakes",
+          "name": "Masterfoods American Mild Mustard Squeeze 250g",
+          "packSize": 250,
+          "packLabel": "250g squeeze bottle",
+          "price": 3.5,
+          "url": "https://142.drakes.com.au/lines/masterfoods-american-mild-mustard-squeeze-250g",
           "priceUpdated": "2026-11-15"
         }
       ]
@@ -500,6 +705,38 @@
           "url": "https://142.drakes.com.au/lines/pepsi-cola-cans-10-x-375ml",
           "priceUpdated": "2026-11-15",
           "regularPrice": 20
+        },
+        {
+          "id": "ww-pepsi-30",
+          "store": "woolworths",
+          "name": "Pepsi Cola Cans 375mL x 30 pack",
+          "packSize": 30,
+          "packLabel": "30 cans",
+          "price": 29.5,
+          "stockcode": "773147",
+          "url": null,
+          "priceUpdated": null
+        },
+        {
+          "id": "ww-pepsi-10",
+          "store": "woolworths",
+          "name": "Pepsi Cola Cans 375mL x 10 pack",
+          "packSize": 10,
+          "packLabel": "10 cans",
+          "price": 20,
+          "stockcode": "442182",
+          "url": null,
+          "priceUpdated": null
+        },
+        {
+          "id": "dk-pepsi-24",
+          "store": "drakes",
+          "name": "Pepsi Cola Cans 24 x 375mL",
+          "packSize": 24,
+          "packLabel": "24 cans",
+          "price": 39.5,
+          "url": "https://142.drakes.com.au/lines/pepsi-cola-cans-24-x-375ml",
+          "priceUpdated": "2026-11-15"
         }
       ]
     },
@@ -543,6 +780,38 @@
           "url": "https://142.drakes.com.au/lines/pepsi-max-cans-10x375ml",
           "priceUpdated": "2026-11-15",
           "regularPrice": 20
+        },
+        {
+          "id": "ww-pepsi-max-30",
+          "store": "woolworths",
+          "name": "Pepsi Max Cans 375mL x 30 pack",
+          "packSize": 30,
+          "packLabel": "30 cans",
+          "price": 29.5,
+          "stockcode": "773129",
+          "url": null,
+          "priceUpdated": null
+        },
+        {
+          "id": "ww-pepsi-max-10",
+          "store": "woolworths",
+          "name": "Pepsi Max Cans 375mL x 10 pack",
+          "packSize": 10,
+          "packLabel": "10 cans",
+          "price": 20,
+          "stockcode": "442190",
+          "url": null,
+          "priceUpdated": null
+        },
+        {
+          "id": "dk-pepsi-max-24",
+          "store": "drakes",
+          "name": "Pepsi Max Cans 24 x 375mL",
+          "packSize": 24,
+          "packLabel": "24 cans",
+          "price": 39.5,
+          "url": "https://142.drakes.com.au/lines/pepsi-max-cans-24x375ml",
+          "priceUpdated": "2026-11-15"
         }
       ]
     },
@@ -585,6 +854,38 @@
           "url": "https://142.drakes.com.au/lines/solo-original-lemon-cans-10x375ml",
           "priceUpdated": "2026-11-15",
           "regularPrice": 20
+        },
+        {
+          "id": "ww-solo-24",
+          "store": "woolworths",
+          "name": "Solo Original Lemon Cans 375mL x 24 pack",
+          "packSize": 24,
+          "packLabel": "24 cans",
+          "price": 39.5,
+          "stockcode": "162763",
+          "url": null,
+          "priceUpdated": null
+        },
+        {
+          "id": "ww-solo-10",
+          "store": "woolworths",
+          "name": "Solo Original Lemon Cans 375mL x 10 pack",
+          "packSize": 10,
+          "packLabel": "10 cans",
+          "price": 20,
+          "stockcode": "442191",
+          "url": null,
+          "priceUpdated": null
+        },
+        {
+          "id": "dk-solo-24",
+          "store": "drakes",
+          "name": "Solo Original Lemon Cans 24 x 375mL",
+          "packSize": 24,
+          "packLabel": "24 cans",
+          "price": 39.5,
+          "url": "https://142.drakes.com.au/lines/solo-original-lemon-cans-24x375ml",
+          "priceUpdated": "2026-11-15"
         }
       ]
     },
@@ -603,7 +904,7 @@
           "packSize": 24,
           "packLabel": "24 bottles",
           "price": 9.4,
-          "stockcode": null,
+          "stockcode": "116784",
           "url": null,
           "priceUpdated": "2026-11-07"
         },
@@ -617,6 +918,26 @@
           "url": "https://142.drakes.com.au/lines/frantelle-spring-water-24x600ml",
           "priceUpdated": "2026-11-15",
           "regularPrice": 20
+        },
+        {
+          "id": "dk-water-good-stuff-24",
+          "store": "drakes",
+          "name": "The Good Stuff Aussie Spring Water 24 x 600mL",
+          "packSize": 24,
+          "packLabel": "24 bottles",
+          "price": 9.4,
+          "url": "https://142.drakes.com.au/lines/the-good-stuff-aussie-spring-water-24x600ml",
+          "priceUpdated": "2026-11-15"
+        },
+        {
+          "id": "dk-water-12",
+          "store": "drakes",
+          "name": "Frantelle Spring Water 12 x 600mL",
+          "packSize": 12,
+          "packLabel": "12 bottles",
+          "price": 10,
+          "url": "https://142.drakes.com.au/lines/frantelle-spring-water-12x600ml",
+          "priceUpdated": "2026-11-15"
         }
       ]
     },
@@ -649,6 +970,38 @@
           "url": "https://142.drakes.com.au/lines/coca-cola-classic-soft-drink-multipack-cans-24x375ml",
           "priceUpdated": "2026-11-15",
           "regularPrice": 45
+        },
+        {
+          "id": "ww-coca-cola-30",
+          "store": "woolworths",
+          "name": "Coca-Cola Classic Cans 375mL x 30 pack",
+          "packSize": 30,
+          "packLabel": "30 cans",
+          "price": 32,
+          "stockcode": "84552",
+          "url": null,
+          "priceUpdated": null
+        },
+        {
+          "id": "ww-coca-cola-10",
+          "store": "woolworths",
+          "name": "Coca-Cola Classic Cans 375mL x 10 pack",
+          "packSize": 10,
+          "packLabel": "10 cans",
+          "price": 21,
+          "stockcode": "793315",
+          "url": null,
+          "priceUpdated": null
+        },
+        {
+          "id": "dk-coca-cola-10",
+          "store": "drakes",
+          "name": "Coca Cola Classic Cans 10 x 375mL",
+          "packSize": 10,
+          "packLabel": "10 cans",
+          "price": 23,
+          "url": "https://142.drakes.com.au/lines/coca-cola-classic-soft-drink-multipack-cans-10x375ml",
+          "priceUpdated": "2026-11-15"
         }
       ]
     },
@@ -692,6 +1045,38 @@
           "url": "https://142.drakes.com.au/lines/coca-cola-no-sugar-multipack-cans-30x375ml",
           "priceUpdated": "2026-11-15",
           "regularPrice": 55
+        },
+        {
+          "id": "ww-coke-no-sugar-30",
+          "store": "woolworths",
+          "name": "Coca-Cola Zero Sugar Cans 375mL x 30 pack",
+          "packSize": 30,
+          "packLabel": "30 cans",
+          "price": 32,
+          "stockcode": "679121",
+          "url": null,
+          "priceUpdated": null
+        },
+        {
+          "id": "ww-coke-no-sugar-10",
+          "store": "woolworths",
+          "name": "Coca-Cola Zero Sugar Cans 375mL x 10 pack",
+          "packSize": 10,
+          "packLabel": "10 cans",
+          "price": 21,
+          "stockcode": "669379",
+          "url": null,
+          "priceUpdated": null
+        },
+        {
+          "id": "dk-coke-no-sugar-10",
+          "store": "drakes",
+          "name": "Coca Cola Zero Sugar Cans 10 x 375mL",
+          "packSize": 10,
+          "packLabel": "10 cans",
+          "price": 23,
+          "url": "https://142.drakes.com.au/lines/coca-cola-no-sugar-multipack-cans-10x375ml",
+          "priceUpdated": "2026-11-15"
         }
       ]
     },
@@ -724,6 +1109,38 @@
           "url": "https://142.drakes.com.au/lines/sprite-lemonade-soft-drink-multipack-cans-24x375ml",
           "priceUpdated": "2026-11-15",
           "regularPrice": 45
+        },
+        {
+          "id": "ww-sprite-30",
+          "store": "woolworths",
+          "name": "Sprite Lemonade Cans 375mL x 30 pack",
+          "packSize": 30,
+          "packLabel": "30 cans",
+          "price": 32,
+          "stockcode": "406937",
+          "url": null,
+          "priceUpdated": null
+        },
+        {
+          "id": "ww-sprite-10",
+          "store": "woolworths",
+          "name": "Sprite Lemonade Cans 375mL x 10 pack",
+          "packSize": 10,
+          "packLabel": "10 cans",
+          "price": 21,
+          "stockcode": "793285",
+          "url": null,
+          "priceUpdated": null
+        },
+        {
+          "id": "dk-sprite-10",
+          "store": "drakes",
+          "name": "Sprite Cans 10 x 375mL",
+          "packSize": 10,
+          "packLabel": "10 cans",
+          "price": 23,
+          "url": "https://142.drakes.com.au/lines/sprite-lemonade-soft-drink-multipack-cans-10x375ml",
+          "priceUpdated": "2026-11-15"
         }
       ]
     },
@@ -756,6 +1173,27 @@
           "url": "https://142.drakes.com.au/lines/fanta-orange-cans-24x375ml",
           "priceUpdated": "2026-11-15",
           "regularPrice": 45
+        },
+        {
+          "id": "ww-fanta-10",
+          "store": "woolworths",
+          "name": "Fanta Orange Cans 375mL x 10 pack",
+          "packSize": 10,
+          "packLabel": "10 cans",
+          "price": 21,
+          "stockcode": "793311",
+          "url": null,
+          "priceUpdated": null
+        },
+        {
+          "id": "dk-fanta-10",
+          "store": "drakes",
+          "name": "Fanta Orange Cans 10 x 375mL",
+          "packSize": 10,
+          "packLabel": "10 cans",
+          "price": 23,
+          "url": "https://142.drakes.com.au/lines/fanta-orange-cans-10x375ml",
+          "priceUpdated": "2026-11-15"
         }
       ]
     }

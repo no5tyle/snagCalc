@@ -227,3 +227,24 @@ test('prices: a special is flagged, and your own bread count changes the loaves'
   assert.deepEqual(errors, []);
   await context.close();
 });
+
+test('pack sizes and brands are compared by unit price, on your own prices too', async () => {
+  const { context, page, errors } = await open();
+  await page.click('[data-menu=consumables]');
+  await page.click('#tab-settings');
+  const firstTomato = () => text(page, '#price-table tr.group + tr');
+  assert.match(await text(page, '#price-table tr.group'), /Tomato sauce.*cheapest per 100 ml first/);
+  assert.equal(await page.locator('#price-table .badge-best').count() > 0, true);
+  // Ozesauce has no price on the list yet: it sorts last until someone enters one
+  assert.ok(!(await firstTomato()).includes('Ozesauce'));
+  await page.fill('[data-price="ww-ozesauce-tomato-500"]', '1');
+  await page.locator('[data-price="ww-ozesauce-tomato-500"]').blur();
+  assert.match(await firstTomato(), /Ozesauce.*cheapest.*\$0\.20 per 100 ml/);
+  // ...and the shopping list now buys it
+  await page.selectOption('#store', 'woolworths');
+  await page.click('#tab-plan');
+  assert.match(await text(page, '#plan-results'), /Ozesauce Tomato Sauce 500mL/);
+  assert.ok(await noSidewaysScroll(page));
+  assert.deepEqual(errors, []);
+  await context.close();
+});

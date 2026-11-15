@@ -131,12 +131,21 @@ export function purchaseFor(needed, products, store, storeIds) {
     if (!opts.length) continue;
     const r = { store: s, ...cheapestPacks(needed, opts) };
     if (r.unavailable) continue;
-    if (!best || compareCost(r.cost, best.cost) < 0) best = r;
+    // On a tie, a price someone has checked beats a guess
+    const diff = best ? compareCost(r.cost, best.cost) : -1;
+    if (diff < 0 || (diff === 0 && guesses(r) < guesses(best))) best = r;
   }
   return best || { store: null, packs: [], units: 0, cost: needed > 0 ? null : 0, unavailable: needed > 0 };
 }
 
-const compareCost = (a, b) => (a ?? Infinity) - (b ?? Infinity);
+const compareCost = (a, b) => {
+  const d = (a ?? Infinity) - (b ?? Infinity);
+  return Number.isNaN(d) || Math.abs(d) < 0.005 ? 0 : d;
+};
+
+/** How many of a purchase's products are priced on a placeholder estimate. */
+const guesses = (purchase) =>
+  purchase.packs.filter(({ product: p }) => !p.priceUpdated && !p.overridden && !p.donated && !p.custom).length;
 
 /**
  * Main calculation.
@@ -696,4 +705,44 @@ export function priceNotes(result, today) {
     }
   }
   return out;
+}
+
+const PER_HUNDRED = new Set(['g', 'ml']);
+
+/**
+ * What a unit price is quoted per: 100 g or 100 ml for things sold by
+ * weight or volume, otherwise one of the thing (a can, a sausage, a slice).
+ * @returns {{ size: number, label: string }}
+ */
+export function unitBasis(ingredient) {
+  const unit = String(ingredient.unit || 'item');
+  if (PER_HUNDRED.has(unit.toLowerCase())) return { size: 100, label: `100 ${unit}` };
+  return { size: 1, label: /[^s]s$/.test(unit) ? unit.slice(0, -1) : unit };
+}
+
+/** A product's price per unit (see unitBasis), or null if it has no price or pack size. */
+export function unitPrice(product, ingredient, price = product.price) {
+  if (!Number.isFinite(price) || !(product.packSize > 0)) return null;
+  return (price / product.packSize) * unitBasis(ingredient).size;
+}
+
+/**
+ * An ingredient's products across every store, cheapest per unit first, for
+ * comparing pack sizes and brands. Apply pricedProducts first to compare on
+ * the user's own prices. Each entry: { product, unitPrice, usualUnitPrice
+ * (when on special), cheapest }. Products with no price come last.
+ * `cheapest` marks the lowest unit price that isn't a placeholder estimate.
+ */
+export function compareProducts(ingredient, products = ingredient.products) {
+  const rows = products.map((product) => ({
+    product,
+    unitPrice: product.donated ? unitPrice(product, ingredient, product.value) : unitPrice(product, ingredient),
+    usualUnitPrice: onSpecial(product) ? unitPrice(product, ingredient, product.regularPrice) : null,
+  }));
+  rows.sort((a, b) => (a.unitPrice ?? Infinity) - (b.unitPrice ?? Infinity));
+  // "Cheapest" goes to a price someone has checked: a placeholder estimate may sort first, but can't be vouched for
+  const sure = ({ product: p, unitPrice: u }) => u != null && Boolean(p.priceUpdated || p.overridden || p.custom || p.donated);
+  const best = rows.find(sure)?.unitPrice;
+  const priced = rows.filter((r) => r.unitPrice != null).length;
+  return rows.map((r) => ({ ...r, cheapest: priced > 1 && sure(r) && Math.abs(r.unitPrice - best) < 1e-9 }));
 }

@@ -109,11 +109,20 @@ async function pagePrice(url) {
   throw new Error('no price found on page');
 }
 
+// Woolworths often refuses every request (it blocks GitHub's servers). After a few
+// refusals in a row there's no point asking for the rest, one slow failure at a time.
+const GIVE_UP_AFTER = 3;
+let wooliesRefusals = 0;
+
 async function lookup(product) {
   if (product.store === 'woolworths' && product.stockcode) {
     try {
-      return await woolworthsPrice(product.stockcode);
+      if (wooliesRefusals >= GIVE_UP_AFTER) throw new Error('skipped: Woolworths is not answering');
+      const found = await woolworthsPrice(product.stockcode);
+      wooliesRefusals = 0;
+      return found;
     } catch (err) {
+      if (!/^skipped/.test(err.message)) wooliesRefusals++;
       if (!product.url) throw err;
     }
   }
@@ -146,7 +155,8 @@ async function main() {
         } catch (err) {
           failures.push(`${product.id} (${store}): ${err.message}`);
         }
-        await new Promise((r) => setTimeout(r, 750)); // be polite
+        // Be polite between real requests
+        if (!(product.store === 'woolworths' && wooliesRefusals >= GIVE_UP_AFTER)) await new Promise((r) => setTimeout(r, 750));
       }
       const age = product.priceUpdated ? daysSince(product.priceUpdated, today) : null;
       if (age == null) stale.push(`${product.name} (${store}): estimate, never checked`);
