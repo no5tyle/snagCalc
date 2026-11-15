@@ -388,59 +388,207 @@ export function wizardProducts(catalogue, menuIds = Object.keys(catalogue.menu),
 
 /**
  * Turn wizard answers ({ [productId]: price | null }) into price overrides.
- * An answer equal to the listed price, or left blank, removes the override.
+ * An answer equal to a checked listed price, or left blank, removes the
+ * override. An answer equal to an estimate is kept: the user has checked it.
  */
 export function applyWizardPrices(catalogue, overrides, answers) {
   const listed = new Map();
-  for (const ing of Object.values(catalogue.ingredients)) for (const p of ing.products) listed.set(p.id, p.price);
+  for (const ing of Object.values(catalogue.ingredients)) for (const p of ing.products) listed.set(p.id, p);
   const out = { ...overrides };
   for (const [id, v] of Object.entries(answers)) {
-    if (!listed.has(id)) continue;
-    if (v == null || !Number.isFinite(v) || v < 0 || round2(v) === listed.get(id)) delete out[id];
+    const p = listed.get(id);
+    if (!p) continue;
+    // Agreeing with an estimate is still a check, so it's kept as the user's own price
+    const same = round2(v) === p.price && (p.priceUpdated || p.custom);
+    if (v == null || !Number.isFinite(v) || v < 0 || same) delete out[id];
     else out[id] = round2(v);
   }
   return out;
 }
 
+const MEASURES = new Set(['g', 'kg', 'ml', 'l']);
+
 /**
- * Add the user's own items (e.g. drinks not in the catalogue) to a copy of
- * the catalogue, so every calculation treats them like built-in ones.
+ * Add the user's own recipes (e.g. burgers) to a copy of the catalogue as
+ * extra menus, placed after the built-in food menus so sauces count them.
+ * They start with an empty recipe; ingredients come from withCustomItems.
  *
- * Each item: { id, menu, name, unit, packSize, price, store, quantity?, salePrice? }.
- * Items with an unknown menu or store, or no pack size, are skipped. Their
- * prices were entered by the user, so they're marked `custom` rather than
- * shown as estimates.
+ * Each menu: { id, name, icon?, serveNoun?, defaultServes?, defaultSalePrice? }.
+ */
+export function withCustomMenus(catalogue, menus = []) {
+  const added = {};
+  for (const m of menus || []) {
+    const name = String(m?.name || '').trim();
+    if (!m?.id || !name || catalogue.menu[m.id] || added[m.id]) continue;
+    const label = name.toLowerCase();
+    added[m.id] = {
+      name,
+      icon: m.icon || '🍽️',
+      tabLabel: name,
+      serveLabel: label,
+      serveNoun: String(m.serveNoun || '').trim().toLowerCase() || label.replace(/s$/, '') || 'serve',
+      defaultServes: Math.max(0, Number(m.defaultServes) || 0),
+      defaultSalePrice: Math.max(0, Number(m.defaultSalePrice) || 0),
+      recipe: [],
+      custom: true,
+    };
+  }
+  if (!Object.keys(added).length) return catalogue;
+  const entries = Object.entries(catalogue.menu);
+  const food = entries.filter(([, m]) => m.kind !== 'items');
+  const items = entries.filter(([, m]) => m.kind === 'items');
+  return { ...catalogue, menu: Object.fromEntries([...food, ...Object.entries(added), ...items]) };
+}
+
+/**
+ * Add the user's own items to a copy of the catalogue, so every calculation
+ * treats them like built-in ones: a drink on the drinks tab, an extra
+ * consumable, or an ingredient in a recipe (built-in or the user's own).
+ *
+ * Each item: { id, menu, name, unit, packSize, price, store, quantity?,
+ * perServe?, salePrice? }, or { id, menu, ingredient, ... } to use an
+ * ingredient that's already in the catalogue (e.g. bread in a burger).
+ * A recipe menu takes `perServe`; an items menu takes `quantity`.
+ *
+ * Items with an unknown menu or store, or no pack size, are skipped, as is
+ * an ingredient the menu already has. Prices were entered by the user, so
+ * they're marked `custom` rather than shown as estimates.
  */
 export function withCustomItems(catalogue, items = []) {
   const ingredients = { ...catalogue.ingredients };
   const menu = { ...catalogue.menu };
   for (const it of items || []) {
     const m = menu[it?.menu];
-    const packSize = Number(it?.packSize);
-    if (!m || !it.id || ingredients[it.id] || !catalogue.stores[it.store] || !(packSize > 0)) continue;
-    const unit = it.unit || 'items';
-    ingredients[it.id] = {
-      name: it.name || 'Drink',
-      unit,
-      stockUnit: { label: unit, size: 1 },
-      custom: true,
-      products: [
-        {
-          id: `${it.id}-pack`,
-          store: it.store,
-          name: `${it.name || 'Drink'} ${packSize} pack`,
-          packSize,
-          packLabel: `${packSize} ${unit}`,
-          price: Number.isFinite(Number(it.price)) && it.price !== '' && it.price != null ? Number(it.price) : null,
-          url: null,
-          priceUpdated: null,
-          custom: true,
-        },
-      ],
-    };
-    const line = { ingredient: it.id, quantity: Math.max(0, Number(it.quantity) || 0), enabled: true, custom: true };
-    if (m.sells) line.salePrice = Math.max(0, Number(it.salePrice) || 0);
+    if (!m || !it.id) continue;
+    let ingredientId;
+    if (it.ingredient) {
+      ingredientId = it.ingredient;
+      if (!ingredients[ingredientId]) continue;
+    } else {
+      ingredientId = it.id;
+      const packSize = Number(it.packSize);
+      if (ingredients[ingredientId] || !catalogue.stores[it.store] || !(packSize > 0)) continue;
+      const unit = it.unit || 'items';
+      const name = it.name || 'Item';
+      const measured = MEASURES.has(unit.toLowerCase());
+      ingredients[ingredientId] = {
+        name,
+        unit,
+        stockUnit: { label: unit, size: 1 },
+        custom: true,
+        products: [
+          {
+            id: `${it.id}-pack`,
+            store: it.store,
+            name: measured ? `${name} ${packSize}${unit}` : `${name} ${packSize} pack`,
+            packSize,
+            packLabel: measured ? `${packSize}${unit}` : `${packSize} ${unit}`,
+            price: Number.isFinite(Number(it.price)) && it.price !== '' && it.price != null ? Number(it.price) : null,
+            url: null,
+            priceUpdated: null,
+            custom: true,
+          },
+        ],
+      };
+    }
+    if (m.recipe.some((r) => r.ingredient === ingredientId)) continue;
+    const line = { ingredient: ingredientId, enabled: true, custom: true, customId: it.id };
+    if (m.kind === 'items') {
+      line.quantity = Math.max(0, Number(it.quantity) || 0);
+      if (m.sells) line.salePrice = Math.max(0, Number(it.salePrice) || 0);
+    } else {
+      line.perServe = Math.max(0, Number(it.perServe) || 0);
+    }
     menu[it.menu] = { ...m, recipe: [...m.recipe, line] };
   }
   return { ...catalogue, ingredients, menu };
+}
+
+/**
+ * One shopping list across several menus: each ingredient's needs are added
+ * up before packs are chosen, so bread shared by sausages and sandwiches is
+ * bought once, not rounded up to whole loaves twice.
+ *
+ * @param {Array<{menuId:string, result:object}>} parts  Results of calculate /
+ *   calculateRestock / calculateItems, worked out with no stock on hand
+ * @param {object} opts
+ * @param {object} opts.catalogue
+ * @param {string} [opts.store]   Store id or 'cheapest'
+ * @param {object} [opts.stock]   For a restock: what's left of each
+ *   ingredient across every menu, in base units
+ *
+ * Bottles checked by eye keep their own line and what's left of them.
+ */
+export function combineResults(parts, { catalogue, store = 'cheapest', stock = null }) {
+  const storeIds = Object.keys(catalogue.stores);
+  const byKey = new Map();
+  for (const { menuId, result } of parts) {
+    for (const l of result.lines) {
+      const key = l.byEye ? `${menuId}:${l.id}` : l.id;
+      let e = byKey.get(key);
+      if (!e) {
+        e = { id: l.id, ingredient: l.ingredient, products: l.products, needed: 0, menus: [] };
+        if (l.byEye) Object.assign(e, { byEye: true, percentLeft: l.percentLeft, left: l.onHand });
+        byKey.set(key, e);
+      }
+      e.needed = roundQty(e.needed + l.needed);
+      e.menus.push(menuId);
+    }
+  }
+  const lines = [...byKey.values()].map(({ left, ...e }) => {
+    const onHand = e.byEye ? left : stock ? Math.max(0, Number(stock[e.id]) || 0) : 0;
+    const shortfall = roundQty(Math.max(0, e.needed - onHand));
+    const purchase = purchaseFor(shortfall, e.products, store, storeIds);
+    purchase.donatedValue = donatedValueOf(purchase);
+    return { ...e, onHand, shortfall, purchase };
+  });
+  return { lines, ...totals(lines) };
+}
+
+/**
+ * A shopping list split by store, for ordering from one store at a time.
+ * @returns {{ groups: Array<{store:string, items:Array, cost:number}>,
+ *   donated: Array, missing: Array }}  Each item is { line, product, count,
+ *   cost }; `missing` lists the lines no store in use sells.
+ */
+export function byStore(result, storeIds) {
+  const groups = new Map(storeIds.map((s) => [s, { store: s, items: [], cost: 0 }]));
+  const donated = [];
+  const missing = [];
+  for (const line of result.lines) {
+    if (line.shortfall > 0 && line.purchase.unavailable) missing.push(line);
+    for (const { product, count } of line.purchase.packs) {
+      if (product.donated) {
+        donated.push({ line, product, count, cost: 0 });
+        continue;
+      }
+      const g = groups.get(product.store) ?? groups.set(product.store, { store: product.store, items: [], cost: 0 }).get(product.store);
+      const cost = Number.isFinite(product.price) ? round2(product.price * count) : null;
+      g.items.push({ line, product, count, cost });
+      g.cost = round2(g.cost + (cost ?? 0));
+    }
+  }
+  return { groups: [...groups.values()].filter((g) => g.items.length), donated, missing };
+}
+
+/**
+ * One menu's share of the stock left over. Stock is counted once for the
+ * whole stall, so an ingredient several menus use (bread) is split between
+ * them by how much each needs. `needs` is { [menuId]: { [ingredientId]: needed } }.
+ */
+export function stockShare(stock, needs, menuId) {
+  const out = {};
+  for (const [id, n] of Object.entries(needs[menuId] || {})) {
+    const have = Math.max(0, Number(stock[id]) || 0);
+    const total = Object.values(needs).reduce((s, m) => s + (Number(m[id]) || 0), 0);
+    out[id] = total > 0 ? roundQty((have * n) / total) : have;
+  }
+  return out;
+}
+
+/** Add up several { [ingredientId]: amount } maps. */
+export function sumUsage(maps) {
+  const out = {};
+  for (const m of maps) for (const [id, v] of Object.entries(m)) out[id] = roundQty((out[id] || 0) + (Number(v) || 0));
+  return out;
 }

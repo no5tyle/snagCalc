@@ -1,9 +1,11 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { cheapestPacks, calculate, calculateRestock, calculateItems, wizardProducts, applyWizardPrices, round2, withCustomItems, expectedDay2, recipeUsage, itemsUsage, leftoverEstimate } from '../assets/calc.js';
+import { combineResults, byStore, stockShare, sumUsage, withCustomMenus, effectiveRecipe, cheapestPacks, calculate, calculateRestock, calculateItems, wizardProducts, applyWizardPrices, round2, withCustomItems, expectedDay2, recipeUsage, itemsUsage, leftoverEstimate } from '../assets/calc.js';
 
 const catalogue = JSON.parse(readFileSync(new URL('../data/catalogue.json', import.meta.url)));
+// Listed prices change every week, so tests read them rather than hard-coding them
+const listed = (id) => Object.values(catalogue.ingredients).flatMap((i) => i.products).find((p) => p.id === id).price;
 
 test('cheapestPacks covers the requirement at minimum cost', () => {
   const products = [
@@ -63,7 +65,7 @@ test('sausages come from Slapes 1.5kg packs of 21 at Drakes', () => {
   const s = r.lines.find((l) => l.id === 'sausages');
   assert.equal(s.purchase.store, 'drakes');
   assert.equal(s.purchase.units, 210); // 10 packs of 21
-  assert.equal(s.purchase.cost, 110);
+  assert.equal(s.purchase.cost, round2(10 * listed('dk-slapes-bbq-1.5kg')));
 });
 
 test('cheapest mode picks one store per ingredient', () => {
@@ -139,17 +141,17 @@ test('leftoverEstimate: what the plan bought minus what day 1 used', () => {
 });
 
 test('items: drinks use their own quantities and sale prices', () => {
-  const r = calculateItems({ catalogue, menuId: 'drinks', store: 'cheapest', itemOverrides: { pepsi: { quantity: 30, salePrice: 2.5 } } });
+  const r = calculateItems({ catalogue, menuId: 'drinks', store: 'woolworths', itemOverrides: { pepsi: { quantity: 30, salePrice: 2.5 } } });
   const pepsi = r.lines.find((l) => l.id === 'pepsi');
   assert.equal(pepsi.needed, 30);
   assert.equal(pepsi.purchase.units, 48); // two 24 packs
-  assert.equal(pepsi.purchase.cost, 46);
+  assert.equal(pepsi.purchase.cost, round2(2 * listed('ww-pepsi-24')));
   const others = r.lines.filter((l) => l.id !== 'pepsi').reduce((s, l) => s + l.needed * l.salePrice, 0);
   assert.equal(r.revenue, 30 * 2.5 + others);
 });
 
 test('items: day 2 restock scales day 1 sales and uses leftovers first', () => {
-  const r = calculateItems({ catalogue, menuId: 'drinks', day2Pct: 50, sold: { pepsi: 40 }, stock: { pepsi: 8 } });
+  const r = calculateItems({ catalogue, menuId: 'drinks', store: 'woolworths', day2Pct: 50, sold: { pepsi: 40 }, stock: { pepsi: 8 } });
   const p = r.lines.find((l) => l.id === 'pepsi');
   assert.equal(p.needed, 20); // half of 40
   assert.equal(p.shortfall, 12);
@@ -254,7 +256,7 @@ test('donated products cost nothing and keep their value', () => {
   assert.equal(s.purchase.donatedValue, 105); // 10 packs × $10.50
   assert.equal(r.donatedValue, 105);
   const normal = calculate({ catalogue, menuId: 'sausage-sizzle', serves: 200, store: 'cheapest' });
-  assert.equal(round2(normal.totalCost - r.totalCost), 110);
+  assert.equal(round2(normal.totalCost - r.totalCost), round2(10 * listed('dk-slapes-bbq-1.5kg')));
 });
 
 test('withCustomItems adds the user\'s own drinks to a copy of the catalogue', () => {
@@ -321,4 +323,118 @@ test('bottles checked by eye: another is bought only if what is left will not la
   assert.equal(oil.purchase.packs[0].count, 1);
   // An unopened spare (100%) plus some is plenty
   assert.equal(run(140, 100).shortfall, 0);
+});
+
+test('combineResults buys shared bread once across sausages and sandwiches', () => {
+  const opts = { catalogue, store: 'woolworths' };
+  const snags = calculate({ ...opts, menuId: 'sausage-sizzle', serves: 190 });
+  const eggs = calculate({ ...opts, menuId: 'egg-bacon', serves: 95 });
+  const all = combineResults([{ menuId: 'sausage-sizzle', result: snags }, { menuId: 'egg-bacon', result: eggs }], opts);
+  const bread = all.lines.find((l) => l.id === 'bread');
+  assert.equal(bread.needed, 190 + 95 * 2);
+  assert.deepEqual(bread.menus, ['sausage-sizzle', 'egg-bacon']);
+  // 380 slices is 19 loaves; planned apart it's 10 + 10
+  assert.equal(bread.purchase.units, 380);
+  const apart = [snags, eggs].reduce((s, r) => s + r.lines.find((l) => l.id === 'bread').purchase.units, 0);
+  assert.equal(apart, 400);
+  assert.equal(all.lines.length, 5); // sausages, bread, onions, eggs, bacon
+  assert.ok(all.totalCost < round2(snags.totalCost + eggs.totalCost));
+});
+
+test('combineResults takes stock off the combined need for a restock', () => {
+  const opts = { catalogue, store: 'woolworths' };
+  const parts = [
+    { menuId: 'sausage-sizzle', result: calculateRestock({ ...opts, menuId: 'sausage-sizzle', sold: 100, day2Pct: 100 }) },
+    { menuId: 'egg-bacon', result: calculateRestock({ ...opts, menuId: 'egg-bacon', sold: 50, day2Pct: 100 }) },
+  ];
+  const all = combineResults(parts, { ...opts, stock: { bread: 150, sausages: 500 } });
+  const bread = all.lines.find((l) => l.id === 'bread');
+  assert.equal(bread.needed, 200);
+  assert.equal(bread.onHand, 150);
+  assert.equal(bread.shortfall, 50);
+  assert.equal(bread.purchase.units, 60); // 3 loaves
+  assert.equal(all.lines.find((l) => l.id === 'sausages').shortfall, 0);
+});
+
+test('combineResults keeps bottles checked by eye as they are', () => {
+  const result = calculateItems({ catalogue, menuId: 'consumables', day2Pct: 100, percentLeft: { oil: 30 }, itemOverrides: {} });
+  const all = combineResults([{ menuId: 'consumables', result }], { catalogue, stock: { oil: 5 } });
+  const oil = all.lines.find((l) => l.id === 'oil');
+  assert.ok(oil.byEye);
+  assert.equal(oil.onHand, 0.3);
+  assert.equal(oil.purchase.units, 1);
+});
+
+test('byStore splits the list by store, with donations and gaps apart', () => {
+  const opts = { catalogue, store: 'cheapest', donated: { 'ww-bread-white': true, 'dk-bread-white': true } };
+  const snags = calculate({ ...opts, menuId: 'sausage-sizzle', serves: 100 });
+  const all = combineResults([{ menuId: 'sausage-sizzle', result: snags }], opts);
+  const { groups, donated, missing } = byStore(all, Object.keys(catalogue.stores));
+  assert.equal(donated.length, 1);
+  assert.equal(donated[0].line.id, 'bread');
+  assert.equal(missing.length, 0);
+  for (const g of groups) assert.ok(g.items.every((i) => i.product.store === g.store));
+  assert.equal(round2(groups.reduce((s, g) => s + g.cost, 0)), all.totalCost);
+
+  const none = { ...catalogue, ingredients: { ...catalogue.ingredients, onions: { ...catalogue.ingredients.onions, products: [] } } };
+  const gap = calculate({ catalogue: none, menuId: 'sausage-sizzle', serves: 100 });
+  assert.deepEqual(byStore(gap, ['woolworths', 'drakes']).missing.map((l) => l.id), ['onions']);
+});
+
+test('every built-in ingredient can be bought at both Woolworths and Drakes', () => {
+  for (const [id, ing] of Object.entries(catalogue.ingredients)) {
+    for (const store of Object.keys(catalogue.stores)) {
+      assert.ok(ing.products.some((p) => p.store === store), `${id} has no ${store} product`);
+    }
+  }
+});
+
+test('stockShare splits shared stock by need', () => {
+  const needs = { a: { bread: 100, sausages: 100 }, b: { bread: 300 } };
+  assert.deepEqual(stockShare({ bread: 80, sausages: 40 }, needs, 'a'), { bread: 20, sausages: 40 });
+  assert.deepEqual(stockShare({ bread: 80 }, needs, 'b'), { bread: 60 });
+  assert.deepEqual(stockShare({ bread: 80 }, { a: { bread: 0 } }, 'a'), { bread: 80 });
+});
+
+test('sumUsage adds usage across menus', () => {
+  assert.deepEqual(sumUsage([{ bread: 100, eggs: 5 }, { bread: 50 }]), { bread: 150, eggs: 5 });
+});
+
+test('a custom recipe: its own menu, new and reused ingredients', () => {
+  const menus = [{ id: 'recipe-burgers', name: 'Burgers', icon: '🍔', serveNoun: 'burger', defaultServes: 50, defaultSalePrice: 5 }, { id: 'drinks', name: 'Clash' }, { id: 'x', name: ' ' }];
+  const items = [
+    { id: 'custom-patties', menu: 'recipe-burgers', name: 'Beef patties', unit: 'patties', packSize: 10, price: 9, store: 'drakes', perServe: 1 },
+    { id: 'custom-use-bread', menu: 'recipe-burgers', ingredient: 'bread', perServe: 2 },
+    { id: 'custom-use-nope', menu: 'recipe-burgers', ingredient: 'nope', perServe: 1 },
+    { id: 'custom-dup-bread', menu: 'sausage-sizzle', ingredient: 'bread', perServe: 5 },
+    { id: 'custom-cheese', menu: 'egg-bacon', name: 'Cheese', unit: 'g', packSize: 500, price: 6, store: 'woolworths', perServe: 20 },
+  ];
+  const cat = withCustomItems(withCustomMenus(catalogue, menus), items);
+  assert.ok(!catalogue.menu['recipe-burgers'], 'original untouched');
+  // After the food menus, before drinks, so sauces count burgers too
+  assert.deepEqual(Object.keys(cat.menu), ['sausage-sizzle', 'egg-bacon', 'recipe-burgers', 'drinks', 'consumables']);
+  assert.equal(cat.menu.drinks.name, 'Drinks');
+  assert.equal(cat.menu['recipe-burgers'].serveLabel, 'burgers');
+  assert.deepEqual(cat.menu['recipe-burgers'].recipe.map((r) => [r.ingredient, r.perServe, r.customId]), [
+    ['custom-patties', 1, 'custom-patties'],
+    ['bread', 2, 'custom-use-bread'],
+  ]);
+  // Bread was already in the sausage recipe, so it isn't added twice
+  assert.equal(effectiveRecipe(cat, 'sausage-sizzle').filter((r) => r.ingredient === 'bread').length, 1);
+  assert.equal(cat.ingredients['custom-cheese'].products[0].name, 'Cheese 500g');
+
+  const r = calculate({ catalogue: cat, menuId: 'recipe-burgers', serves: 50, store: 'cheapest' });
+  const patties = r.lines.find((l) => l.id === 'custom-patties');
+  assert.equal(patties.purchase.cost, 45);
+  assert.equal(r.lines.find((l) => l.id === 'bread').needed, 100);
+  const egg = calculate({ catalogue: cat, menuId: 'egg-bacon', serves: 50, store: 'cheapest' });
+  assert.equal(egg.lines.find((l) => l.id === 'custom-cheese').purchase.units, 1000);
+  const sauces = calculateItems({ catalogue: cat, menuId: 'consumables', servesByMenu: { 'sausage-sizzle': 100, 'recipe-burgers': 50 } });
+  assert.equal(sauces.lines.find((l) => l.id === 'tomato-sauce').needed, 1500);
+});
+
+test('applyWizardPrices keeps an estimate the user agreed with as their own price', () => {
+  const out = applyWizardPrices(catalogue, {}, { 'ww-sausages-24': listed('ww-sausages-24'), 'dk-bread-white': listed('dk-bread-white') });
+  assert.equal(out['ww-sausages-24'], listed('ww-sausages-24'));
+  assert.ok(!('dk-bread-white' in out));
 });

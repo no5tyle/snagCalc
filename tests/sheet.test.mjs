@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { calculate, calculateRestock, calculateItems } from '../assets/calc.js';
+import { combineResults, calculate, calculateRestock, calculateItems } from '../assets/calc.js';
 import { buildSheet, toTSV } from '../assets/sheet.js';
 
 const catalogue = JSON.parse(readFileSync(new URL('../data/catalogue.json', import.meta.url)));
@@ -77,7 +77,7 @@ test('sheet formulas recalculate when the serves cell changes', () => {
 
 test('sausage restock sheet matches the app', () => {
   const result = calculateRestock({
-    catalogue, menuId: 'sausage-sizzle', sold: 300, day2Pct: 50, bufferPct: 5, store: 'cheapest',
+    catalogue, menuId: 'sausage-sizzle', sold: 300, day2Pct: 50, bufferPct: 5, store: 'drakes',
     stock: { sausages: 100, bread: 60 },
   });
   const rows = buildSheet({ kind: 'recipe', mode: 'restock', result, title: 'Test', serveLabel: 'sausages', serveNoun: 'sausage', bufferPct: 5, salePrice: 3 });
@@ -88,7 +88,7 @@ test('sausage restock sheet matches the app', () => {
   // Changing the % in the sheet recalculates
   rows[rows.findIndex((r) => r[0] === 'Day 2 sales, % of day 1')][1] = 80;
   const more = calculateRestock({
-    catalogue, menuId: 'sausage-sizzle', sold: 300, day2Pct: 80, bufferPct: 5, store: 'cheapest',
+    catalogue, menuId: 'sausage-sizzle', sold: 300, day2Pct: 80, bufferPct: 5, store: 'drakes',
     stock: { sausages: 100, bread: 60 },
   });
   near(labelled(rows, evaluate(rows), 'Shopping total'), more.totalCost);
@@ -153,7 +153,7 @@ test('donated items cost nothing in the sheet and add to donations worth', () =>
   const v = evaluate(rows);
   near(labelled(rows, v, 'Shopping total'), result.totalCost);
   near(labelled(rows, v, 'Donations worth'), result.donatedValue);
-  near(result.donatedValue, 110);
+  near(result.donatedValue, 10 * result.lines.find((l) => l.id === 'sausages').purchase.packs[0].product.value);
 });
 
 test('restock sheet keeps checked-by-eye bottles as fractions', () => {
@@ -163,4 +163,12 @@ test('restock sheet keeps checked-by-eye bottles as fractions', () => {
   // Oil (40% left) needs nothing; dish liquid (10% left, needs 45%) needs one
   assert.ok(result.lines.find((l) => l.id === 'oil').purchase.packs.length === 0);
   assert.equal(result.lines.find((l) => l.id === 'dish-liquid').purchase.packs[0].count, 1);
+});
+
+test('combined list sheet: one row per product, packs and total recalculated', () => {
+  const opts = { catalogue, store: 'cheapest' };
+  const parts = ['sausage-sizzle', 'egg-bacon'].map((menuId) => ({ menuId, result: calculate({ ...opts, menuId, serves: 100, bufferPct: 5 }) }));
+  const all = combineResults(parts, opts);
+  const rows = buildSheet({ kind: 'items', mode: 'plan', result: { lines: all.lines.map((l) => ({ ...l, planned: l.shortfall })) }, title: 'Test' });
+  near(labelled(rows, evaluate(rows), 'Shopping total'), all.totalCost);
 });

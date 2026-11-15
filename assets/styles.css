@@ -477,3 +477,94 @@ input[type=text]:focus-visible { outline: none; }
 .custom-form .notice { margin: 12px 0 0; }
 button.link.danger { margin-left: 8px; color: #ff3b30; }
 @media (max-width: 640px) { .custom-grid { grid-template-columns: 1fr 1fr; } }
+
+/* ---------------------------------------------------------------- The Shop tab */
+/* Each menu is a section that folds open, with a switch for whether it's being sold */
+.menu-section { border-top: 1px solid var(--border-soft); }
+.menu-section > summary {
+  display: flex; align-items: center; gap: 10px;
+  min-height: 52px; padding: 8px 0;
+  cursor: pointer; list-style: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.menu-section > summary::-webkit-details-marker { display: none; }
+.menu-section > summary .icon { font-size: 1.5rem; line-height: 1; }
+.menu-section .section-title { flex: 1 1 auto; min-width: 0; font-size: 1.0625rem; font-weight: 600; }
+.menu-section .section-title .sub { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+/* A chevron that turns when the section is open */
+.menu-section > summary::after {
+  content: ""; flex: 0 0 auto; order: 3;
+  width: 0.55rem; height: 0.55rem; margin: 0 4px 3px;
+  border-right: 2px solid var(--faint); border-bottom: 2px solid var(--faint);
+  transform: rotate(45deg); transition: transform 0.2s ease;
+}
+.menu-section[open] > summary::after { margin-bottom: -3px; transform: rotate(-135deg); }
+.menu-section.off > summary::after { visibility: hidden; }
+.menu-section.off > summary { cursor: default; }
+.menu-section.off .icon, .menu-section.off .section-title { opacity: 0.5; }
+.menu-section .section-body { padding: 4px 0 16px; }
+.menu-section .big-input input { font-size: 1.25rem; }
+.card > .menu-section:last-of-type { border-bottom: 1px solid var(--border-soft); }
+.card > .menu-section:last-child { border-bottom: 0; }
+
+/* A store's part of the list: tick things off as they go in the trolley */
+.store-card h2 { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.store-total { color: var(--muted); font-size: 1.0625rem; font-weight: 600; white-space: nowrap; }
+.shop-list { margin: 0; padding: 0; list-style: none; }
+.shop-list li { border-top: 1px solid var(--border-soft); }
+.shop-item {
+  display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: start; gap: 12px;
+  padding: 10px 0; color: var(--text); font-size: 1rem; font-weight: 400; cursor: pointer;
+}
+.shop-item input[type=checkbox] { width: 24px; height: 24px; margin: 1px 0 0; }
+.shop-item .cost { font-weight: 600; text-align: right; white-space: nowrap; }
+.shop-item .cost .sub { font-weight: 400; }
+.shop-item a { color: var(--tint); }
+.shop-item:has(input:checked) .what, .shop-item:has(input:checked) .cost { opacity: 0.45; }
+.shop-item:has(input:checked) .what { text-decoration: line-through; }
+.shop-item:has(input:checked) .what .sub { text-decoration: none; }
+p.none { margin: 0 0 8px; }
+
+/* A menu that's switched off is dimmed in the tabs */
+.menu-tabs button.off .icon, .menu-tabs button.off .tab-label { opacity: 0.45; }
+/* More tabs than fit (your own recipes): the bar scrolls sideways */
+@media (max-width: 899.98px) {
+  .menu-tabs { overflow-x: auto; scrollbar-width: none; }
+  .menu-tabs::-webkit-scrollbar { display: none; }
+  .menu-tabs button { flex: 1 0 3.75rem; }
+}
+
+/* ---------------------------------------------------------------- Your own recipes */
+.recipe-empty { margin: 12px 0 0; }
+.recipe-list { margin: 0 0 4px; padding: 0; list-style: none; }
+.recipe-list li { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--border-soft); font-weight: 600; }
+.recipe-admin { padding-top: 12px; border-top: 1px solid var(--border-soft); }
+button.secondary.danger { color: var(--danger, #ff3b30); }
+
+dialog.sheet-dialog {
+  width: min(460px, calc(100vw - 24px));
+  max-height: calc(100dvh - 24px);
+  overflow-y: auto;
+  padding: 0;
+  border: 0;
+  border-radius: 1.75rem;
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: var(--shadow);
+}
+dialog.sheet-dialog::backdrop { background: rgba(0, 0, 0, 0.35); -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px); }
+.sheet-dialog form { display: flex; flex-direction: column; gap: 14px; margin: 0; padding: 22px; }
+.sheet-dialog h2 { margin: 0; font-size: 1.375rem; font-weight: 700; }
+.sheet-dialog p { margin: 0; }
+.sheet-dialog .grid-2.tight { grid-template-columns: 1fr 1fr; }
+.icon-choices { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; margin: 0; padding: 0; border: 0; }
+.icon-choices legend { margin-bottom: 0.35rem; padding: 0; color: var(--text-2); font-size: 0.9375rem; font-weight: 500; }
+.icon-choices label { position: relative; align-items: center; justify-content: center; min-height: 46px; border-radius: var(--radius); background: var(--fill); font-size: 1.5rem; cursor: pointer; }
+.icon-choices input { position: absolute; opacity: 0; inset: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; }
+.icon-choices label:has(input:checked) { background: var(--tint-fill); box-shadow: inset 0 0 0 2px var(--tint); }
+.icon-choices label:has(input:focus-visible) { outline: 2px solid var(--tint); outline-offset: 2px; }
+
+@media print {
+  dialog.sheet-dialog, .on-shop #plan-inputs, .on-shop #restock-inputs { display: none !important; }
+  .shop-item a { display: none; }
+}
