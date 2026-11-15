@@ -60,6 +60,7 @@ const SHAPE = {
   active: mapOf((v) => (v === false ? false : undefined)),
   stock: mapOf(count),
   packs: mapOf(count),
+  choice: mapOf(text),
   carry: (v) => (isObj(v) ? mapOf(count)(v) : undefined),
   customItems: listOf(customItem),
   customMenus: listOf(customMenu),

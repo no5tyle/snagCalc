@@ -629,3 +629,16 @@ a.button.bookmarklet { margin: 4px 0; cursor: grab; }
 .ww-loaded a, .ww-loaded button.link { color: inherit; text-decoration: underline; }
 .ww-loaded button.link.danger { margin-left: 4px; }
 @media print { #ww-dialog { display: none !important; } }
+
+/* ---------------------------------------------------------------- Picking a product on the Plan view */
+.picker { display: grid; gap: 8px; margin-top: 8px; }
+.shop-list .picker { margin: 0 0 12px 36px; }
+select.product-pick { min-height: 40px; padding-block: 0.25rem; font-size: .9rem; text-overflow: ellipsis; }
+/* Price, unit price and total, side by side */
+.figures { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin: 0; }
+.figures > div { padding: 6px 10px; border-radius: var(--radius); background: var(--surface-2); }
+.figures dt { color: var(--muted); font-size: .72rem; font-weight: 600; letter-spacing: .02em; text-transform: uppercase; }
+.figures dd { margin: 0; font-size: 1.0625rem; font-weight: 700; line-height: 1.25; }
+.figures dd .sub { font-size: .75rem; font-weight: 400; }
+.figures > div:last-child { background: var(--tint-fill); }
+@media print { .picker select { display: none; } }

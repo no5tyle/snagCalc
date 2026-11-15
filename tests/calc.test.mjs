@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { loadCatalogue, storeIds, readStoreFile } from '../scripts/catalogue-files.mjs';
-import { assembleCatalogue, unitPrice, unitBasis, compareProducts, purchaseFor, pricedProducts, stockLeft, carryForward, combineResults, byStore, stockShare, sumUsage, withCustomMenus, effectiveRecipe, cheapestPacks, calculate, calculateRestock, calculateItems, wizardProducts, applyWizardPrices, round2, withCustomItems, expectedDay2, recipeUsage, itemsUsage, leftoverEstimate } from '../assets/calc.js';
+import { productOptions, assembleCatalogue, unitPrice, unitBasis, compareProducts, purchaseFor, pricedProducts, stockLeft, carryForward, combineResults, byStore, stockShare, sumUsage, withCustomMenus, effectiveRecipe, cheapestPacks, calculate, calculateRestock, calculateItems, wizardProducts, applyWizardPrices, round2, withCustomItems, expectedDay2, recipeUsage, itemsUsage, leftoverEstimate } from '../assets/calc.js';
 
 const catalogue = loadCatalogue();
 // Listed prices change every week, so tests read them rather than hard-coding them
@@ -209,7 +209,7 @@ test('wizardProducts lists each product once with the menus using it', () => {
 
 test('applyWizardPrices sets changed prices and clears unchanged ones', () => {
   const out = applyWizardPrices(catalogue, { 'ww-bread-white': 3, 'ww-pepsi-24': 20 }, {
-    'ww-bread-white': 2.8, // same as listed: override removed
+    'ww-bread-white': listed('ww-bread-white'), // same as listed: override removed
     'dk-slapes-bbq-1.5kg': 10.5,
     'ww-eggs-12': null, // blank: use listed
     'not-a-product': 5,
@@ -621,4 +621,59 @@ test('cheapest store: on a tie, a checked price beats an estimate', () => {
   // A cheaper guess still wins
   products[0].price = 4;
   assert.equal(purchaseFor(10, products, 'cheapest', ['a', 'b']).store, 'a');
+});
+
+test('a product picked by hand is bought in place of the best buy', () => {
+  const ing = { unit: 'cans' };
+  const products = [
+    { id: 'big', store: 'a', packSize: 30, price: 26, priceUpdated: '2026-11-15' },
+    { id: 'small', store: 'b', packSize: 10, price: 10, priceUpdated: '2026-11-15' },
+    { id: 'unpriced', store: 'a', packSize: 24, price: null },
+  ];
+  const stores = ['a', 'b'];
+  assert.equal(purchaseFor(24, products, 'cheapest', stores, ing).packs[0].product.id, 'big');
+  const picked = purchaseFor(24, products, 'cheapest', stores, ing, 'small');
+  assert.deepEqual([picked.chosen, picked.store, picked.packs[0].count, picked.units, picked.cost], [true, 'b', 3, 30, 30]);
+  // It also overrides buying on unit price
+  assert.equal(purchaseFor(24, products, 'cheapest', stores, { ...ing, chooseBy: 'unitPrice' }, 'small').packs[0].product.id, 'small');
+  // A pick the store in use doesn't sell, or that no longer exists, falls back to the best buy
+  const other = purchaseFor(24, products, 'a', stores, ing, 'small');
+  assert.deepEqual([other.chosen, other.packs[0].product.id], [undefined, 'big']);
+  assert.equal(purchaseFor(24, products, 'cheapest', stores, ing, 'gone').packs[0].product.id, 'big');
+  // A pick with no price yet is bought, with the cost unknown
+  assert.equal(purchaseFor(24, products, 'cheapest', stores, ing, 'unpriced').cost, null);
+  assert.deepEqual(purchaseFor(0, products, 'cheapest', stores, ing, 'small').packs, []);
+});
+
+test('choices run through a plan, a restock and the combined list', () => {
+  const choices = { bread: 'dk-bread-white', eggs: 'ww-eggs-12' };
+  const opts = { catalogue, store: 'cheapest', choices };
+  const snags = calculate({ ...opts, menuId: 'sausage-sizzle', serves: 100 });
+  assert.equal(snags.lines.find((l) => l.id === 'bread').purchase.packs[0].product.id, 'dk-bread-white');
+  const eggs = calculate({ ...opts, menuId: 'egg-bacon', serves: 50 });
+  assert.equal(eggs.lines.find((l) => l.id === 'eggs').purchase.packs[0].product.id, 'ww-eggs-12');
+  const all = combineResults([{ menuId: 'sausage-sizzle', result: snags }, { menuId: 'egg-bacon', result: eggs }], opts);
+  const bread = all.lines.find((l) => l.id === 'bread');
+  assert.deepEqual([bread.purchase.packs[0].product.id, bread.purchase.packs[0].count, bread.purchase.chosen], ['dk-bread-white', 10, true]);
+  const restock = calculateRestock({ ...opts, menuId: 'sausage-sizzle', sold: 100, day2Pct: 100 });
+  assert.equal(restock.lines.find((l) => l.id === 'bread').purchase.store, 'drakes');
+  const drinks = calculateItems({ catalogue, menuId: 'drinks', choices: { pepsi: 'dk-pepsi-10' } });
+  assert.equal(drinks.lines.find((l) => l.id === 'pepsi').purchase.packs[0].product.id, 'dk-pepsi-10');
+});
+
+test('productOptions: what each product would take and cost, best value first', () => {
+  const line = {
+    shortfall: 24,
+    ingredient: { unit: 'cans' },
+    products: [
+      { id: 'ten', store: 'b', packSize: 10, price: 10, priceUpdated: '2026-11-15' },
+      { id: 'thirty', store: 'a', packSize: 30, price: 26, priceUpdated: '2026-11-15' },
+      { id: 'gift', store: 'a', packSize: 24, price: 0, value: 23, donated: true },
+      { id: 'unpriced', store: 'a', packSize: 24, price: null },
+    ],
+  };
+  const all = productOptions(line, 'cheapest', ['a', 'b']);
+  assert.deepEqual(all.map((o) => [o.product.id, o.count, o.units, o.total]), [['thirty', 1, 30, 26], ['gift', 1, 24, 0], ['ten', 3, 30, 30], ['unpriced', 1, 24, null]]);
+  assert.equal(all[0].unitPrice, 26 / 30);
+  assert.deepEqual(productOptions(line, 'b', ['a', 'b']).map((o) => o.product.id), ['ten']);
 });

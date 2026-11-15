@@ -309,3 +309,43 @@ test('Woolworths prices: collected on the Woolworths site, loaded here, and expo
   assert.deepEqual(errors, []);
   await context.close();
 });
+
+test('picking a product on the Plan view: a dropdown, with price, unit price and total', async () => {
+  const { context, page, errors } = await open();
+  const figures = async (ingredient) => text(page, `.picker:has([data-choose="${ingredient}"]) .figures`);
+  const options = await page.$$eval('[data-choose=bread] option', (els) => els.map((o) => o.textContent));
+  assert.equal(options[0], 'Best buy (chosen for you)');
+  // Each option says the price, the unit price and what the lot would cost
+  const drakesBread = options.find((o) => o.includes('Drakes'));
+  assert.match(drakesBread, /\(Drakes\) · \$[\d.]+ each · \$[\d.]+ per slice · 21 for \$[\d.]+/);
+  const total = Number(drakesBread.match(/21 for \$([\d.]+)/)[1]);
+
+  await page.selectOption('[data-choose=bread]', 'dk-bread-white');
+  assert.match(await text(page, '#plan-results'), /21 × Drakes White Sandwich Soft Sliced Bread/);
+  assert.match(await figures('bread'), new RegExp(`Price \\$[\\d.]+ × 21 Unit price \\$[\\d.]+ per slice Total \\$${total.toFixed(2)} 21 packs`, 'i'));
+  assert.equal(await page.inputValue('[data-choose=bread]'), 'dk-bread-white');
+
+  // The pick holds on the menu's own tab and after a reload
+  await page.click('[data-menu=sausage-sizzle]');
+  assert.equal(await page.inputValue('[data-choose=bread]'), 'dk-bread-white');
+  assert.match(await text(page, '#plan-results'), /Drakes White Sandwich Soft Sliced Bread/);
+  await page.reload();
+  await page.waitForSelector('[data-choose=bread]');
+  assert.equal(await page.inputValue('[data-choose=bread]'), 'dk-bread-white');
+
+  // A store that doesn't sell the pick goes back to its own best buy, and the pick returns with the store
+  await page.selectOption('#store', 'woolworths');
+  assert.match(await text(page, '#plan-results'), /Woolworths White Soft Sandwich Bread/);
+  // Woolworths has one bread, so there's nothing to choose between; sausages have none at all to pick
+  assert.equal(await page.locator('[data-choose=bread]').count(), 0);
+  assert.match(await figures('sausages').catch(() => text(page, '#plan-results .figures >> nth=0')), /Unit price/i);
+  await page.selectOption('#store', 'cheapest');
+  assert.equal(await page.inputValue('[data-choose=bread]'), 'dk-bread-white');
+
+  // Back to the best buy
+  await page.selectOption('[data-choose=bread]', '');
+  assert.equal(await page.inputValue('[data-choose=bread]'), '');
+  assert.ok(await noSidewaysScroll(page));
+  assert.deepEqual(errors, []);
+  await context.close();
+});

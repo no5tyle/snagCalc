@@ -12,6 +12,8 @@ import {
   onSpecial,
   pricedProducts,
   compareProducts,
+  productOptions,
+  unitPrice,
   unitBasis,
   calculateItems,
   effectiveRecipe,
@@ -117,6 +119,7 @@ function defaultSettings() {
     carry: null, // what the day started with once a restock was bought, { [ingredientId]: base units }; before that it's the first shop
     restockFor: 'next', // 'next' (tomorrow) or 'today' (a top-up for the rest of today)
     topupPct: 50, // rest of today's sales as a % of sales so far
+    choice: {}, // products picked by hand in place of the best buy, { [ingredientId]: productId }
     packs: {}, // the user's own pack sizes, { [productId]: usable slices in a loaf, rashers in a kilo… }
     ticks: {}, // items ticked off while shopping, { plan|restock: { [productId]: packs } }
     day2Pct: 100,
@@ -152,6 +155,7 @@ function loadSettings() {
       prices: obj(saved.prices),
       ticks: obj(saved.ticks),
       packs: obj(saved.packs),
+      choice: obj(saved.choice),
       customItems: list(saved.customItems),
       customMenus: list(saved.customMenus),
     };
@@ -272,6 +276,46 @@ function fmtQty(base, ing) {
 
 const storeName = (id) => catalogue.stores[id]?.name ?? id;
 
+/** A unit price: to the cent, or a tenth of a cent when it's under 10c. */
+const unitMoney = (n) => (n < 0.1 ? `${(n * 100).toFixed(1)}c` : money(n));
+
+/**
+ * Choosing which product to buy for a line on the Plan view: a dropdown of
+ * everything the stores in use sell (best buy first), then the price, unit
+ * price and total of what's being bought.
+ */
+function productPicker(line) {
+  if (line.shortfall <= 0 || line.purchase.unavailable) return '';
+  const ing = line.ingredient;
+  const per = unitBasis(ing).label;
+  const options = productOptions(line, settings.store, Object.keys(catalogue.stores));
+  const picked = line.purchase.chosen ? line.purchase.packs[0]?.product.id : '';
+  const optionText = (o) =>
+    `${o.product.name} (${storeName(o.product.store)}) · ${o.product.donated ? 'donated' : o.product.price == null ? 'no price' : `${money(o.product.price)} each`}${
+      o.unitPrice == null ? '' : ` · ${unitMoney(o.unitPrice)} per ${per}`
+    } · ${o.count} for ${o.product.donated ? '$0' : money(o.total)}`;
+  const select =
+    options.length > 1
+      ? `<select class="product-pick" data-choose="${esc(line.id)}" aria-label="Product for ${esc(ing.name)}">
+      <option value="">Best buy (chosen for you)</option>
+      ${options.map((o) => `<option value="${esc(o.product.id)}" ${o.product.id === picked ? 'selected' : ''}>${esc(optionText(o))}</option>`).join('')}
+    </select>`
+      : '';
+  // What's being bought: one row of figures for each product (a best buy can mix sizes)
+  const figures = line.purchase.packs
+    .map(({ product, count }) => {
+      const each = product.donated ? unitPrice(product, ing, product.value) : unitPrice(product, ing);
+      const price = product.donated ? product.value : product.price;
+      return `<dl class="figures">
+        <div><dt>Price</dt><dd>${money(price)}<span class="sub">${count > 1 ? `× ${count}` : 'a pack'}</span></dd></div>
+        <div><dt>Unit price</dt><dd>${each == null ? '—' : unitMoney(each)}<span class="sub">per ${esc(per)}</span></dd></div>
+        <div><dt>Total</dt><dd>${product.donated ? '$0.00' : money(Number.isFinite(product.price) ? product.price * count : null)}<span class="sub">${product.donated ? 'donated' : `${count} ${count === 1 ? 'pack' : 'packs'}`}</span></dd></div>
+      </dl>`;
+    })
+    .join('');
+  return `<div class="picker">${select}${figures}</div>`;
+}
+
 function buyCell(line) {
   const p = line.purchase;
   if (line.shortfall <= 0) return '<span class="none">Nothing needed</span>';
@@ -377,7 +421,7 @@ function resultsCard(result, { restock = false, title, counted = {}, shared = ne
               }</div></td>`
             : ''
         }
-        <td data-label="Buy"><div>${buyCell(l)}</div></td>
+        <td data-label="Buy"><div>${buyCell(l)}${restock ? '' : productPicker(l)}</div></td>
         <td class="num" data-label="Cost"><div>${money(l.purchase.cost)}${
           l.purchase.donatedValue > 0
             ? `<span class="sub">donated, worth ${money(l.purchase.donatedValue)}</span>`
@@ -441,7 +485,7 @@ function servesByMenu(mode) {
 /** One menu's plan or day 2 restock. `stock` is what it has on hand, in base units. */
 function menuResult(id, mode, stock = {}) {
   const m = ms(id);
-  const common = { catalogue, menuId: id, store: settings.store, bufferPct: settings.buffer, priceOverrides: settings.prices, donated: settings.donated };
+  const common = { catalogue, menuId: id, store: settings.store, bufferPct: settings.buffer, priceOverrides: settings.prices, donated: settings.donated, choices: settings.choice };
   if (isItems(id)) {
     return calculateItems({
       ...common,
@@ -458,7 +502,7 @@ function menuResult(id, mode, stock = {}) {
 function combined(ids, mode, stock = null) {
   return combineResults(
     ids.map((id) => ({ menuId: id, result: menuResult(id, mode) })),
-    { catalogue, store: settings.store, stock }
+    { catalogue, store: settings.store, stock, choices: settings.choice }
   );
 }
 
@@ -620,7 +664,7 @@ function renderRestockResults() {
 const productUrl = (p) =>
   p.url || (p.store === 'woolworths' && p.stockcode ? `https://www.woolworths.com.au/shop/productdetails/${encodeURIComponent(p.stockcode)}` : null);
 
-function shopItemRow({ line, product, count, cost }, mode) {
+function shopItemRow({ line, product, count, cost }, mode, pickerFor = new Set()) {
   const ing = line.ingredient;
   const why = line.byEye
     ? line.percentLeft == null
@@ -642,7 +686,7 @@ function shopItemRow({ line, product, count, cost }, mode) {
         ? `<span class="badge-donated">Donated</span>${product.value ? `<span class="sub">worth ${money(product.value * count)}</span>` : ''}`
         : `${money(cost)}${priceBadge(product)}`
     }</span>
-  </label></li>`;
+  </label>${mode === 'plan' && pickerFor.has(product.id) ? productPicker(line) : ''}</li>`;
 }
 
 function shopResultsHTML(result, mode, ids) {
@@ -653,6 +697,8 @@ function shopResultsHTML(result, mode, ids) {
     }</p></div>`;
   }
   const { groups, donated, missing } = byStore(result, Object.keys(catalogue.stores));
+  // The product picker goes under the first product of each item (a best buy can be a mix of two)
+  const pickerFor = new Set(result.lines.map((l) => l.purchase.packs[0]?.product.id).filter(Boolean));
   const takings = takingsFor(ids, mode);
   const stats = [['Shopping total', money(result.totalCost)]];
   if (groups.length > 1) for (const g of groups) stats.push([storeName(g.store), money(g.cost)]);
@@ -689,14 +735,14 @@ function shopResultsHTML(result, mode, ids) {
     .map(
       (g) => `<div class="card store-card">
       <h2>${esc(storeName(g.store))}<span class="store-total">${money(g.cost)}</span></h2>
-      <ul class="shop-list">${g.items.map((it) => shopItemRow(it, mode)).join('')}</ul>
+      <ul class="shop-list">${g.items.map((it) => shopItemRow(it, mode, pickerFor)).join('')}</ul>
     </div>`
     )
     .join('');
   const donatedCard = donated.length
     ? `<div class="card store-card">
       <h2>Donated<span class="store-total">worth ${money(result.donatedValue)}</span></h2>
-      <ul class="shop-list">${donated.map((it) => shopItemRow(it, mode)).join('')}</ul>
+      <ul class="shop-list">${donated.map((it) => shopItemRow(it, mode, pickerFor)).join('')}</ul>
     </div>`
     : '';
   const tail =
@@ -1453,9 +1499,6 @@ async function deleteRecipe(id) {
   rebuildCatalogue();
   renderMenu();
 }
-
-/** A unit price: to the cent, or a tenth of a cent when it's under 10c. */
-const unitMoney = (n) => (n < 0.1 ? `${(n * 100).toFixed(1)}c` : money(n));
 
 /** A product's pack size on the shared price list, before the user's own count. */
 const basePackSize = (productId) =>
@@ -2328,6 +2371,17 @@ function bindInputs() {
       true
     );
   }
+
+  // Picking a product by hand on the Plan view, in place of the best buy
+  $('#plan-results').addEventListener('change', (e) => {
+    const id = e.target.dataset.choose;
+    if (!id) return;
+    if (e.target.value) settings.choice[id] = e.target.value;
+    else delete settings.choice[id];
+    changed();
+    // The list was redrawn: put the focus back on the same dropdown
+    document.querySelector(`#plan-results [data-choose="${CSS.escape(id)}"]`)?.focus({ preventScroll: true });
+  });
 
   // Ticking things off the Shop list as they go in the trolley
   for (const mode of ['plan', 'restock']) {

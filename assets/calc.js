@@ -121,7 +121,10 @@ const donatedValueOf = (purchase) =>
  * Choose products for an ingredient given the store mode.
  * store: a store id, or 'cheapest' to pick the cheapest store per ingredient.
  */
-export function purchaseFor(needed, products, store, storeIds, ingredient = null) {
+export function purchaseFor(needed, products, store, storeIds, ingredient = null, chosenId = null) {
+  // The product someone picked, if the stores in use sell it; otherwise the usual best buy
+  const chosen = chosenId && (products || []).find((p) => p.id === chosenId && p.packSize > 0 && (store === 'cheapest' ? storeIds.includes(p.store) : p.store === store));
+  if (chosen) return { ...packsOf(chosen, needed), chosen: true };
   if (ingredient?.chooseBy === 'unitPrice') return bestValuePacks(needed, products, store, storeIds, ingredient);
   if (store !== 'cheapest') {
     return { store, ...cheapestPacks(needed, products.filter((p) => p.store === store)) };
@@ -137,6 +140,19 @@ export function purchaseFor(needed, products, store, storeIds, ingredient = null
     if (diff < 0 || (diff === 0 && guesses(r) < guesses(best))) best = r;
   }
   return best || { store: null, packs: [], units: 0, cost: needed > 0 ? null : 0, unavailable: needed > 0 };
+}
+
+/** As many of one product as it takes to cover `needed`. */
+function packsOf(product, needed) {
+  const target = Math.ceil(needed - 1e-9);
+  if (target <= 0) return { store: product.store, packs: [], units: 0, cost: 0 };
+  const count = Math.ceil(target / product.packSize);
+  return {
+    store: product.store,
+    packs: [{ product, count }],
+    units: product.packSize * count,
+    cost: Number.isFinite(product.price) ? round2(product.price * count) : null,
+  };
 }
 
 const isGuess = (p) => !p.priceUpdated && !p.overridden && !p.donated && !p.custom;
@@ -162,13 +178,7 @@ function bestValuePacks(needed, products, store, storeIds, ingredient) {
     if (isGuess(a) !== isGuess(b)) return isGuess(a) ? b : a;
     return b.packSize < a.packSize ? b : a;
   });
-  const count = Math.ceil(target / best.packSize);
-  return {
-    store: best.store,
-    packs: [{ product: best, count }],
-    units: best.packSize * count,
-    cost: Number.isFinite(best.price) ? round2(best.price * count) : null,
-  };
+  return packsOf(best, target);
 }
 
 const compareCost = (a, b) => {
@@ -191,6 +201,8 @@ const guesses = (purchase) => purchase.packs.filter(({ product }) => isGuess(pro
  * @param {object} [args.stock]     Stock on hand in base units { [ingredientId]: number }
  * @param {object} [args.recipeOverrides]
  * @param {object} [args.priceOverrides]
+ * @param {object} [args.choices]   Products picked by hand, { [ingredientId]: productId }:
+ *   that product is bought (as many as it takes) instead of the best buy
  */
 export function calculate({
   catalogue,
@@ -202,6 +214,7 @@ export function calculate({
   recipeOverrides = {},
   priceOverrides = {},
   donated = {},
+  choices = {},
 }) {
   const storeIds = Object.keys(catalogue.stores);
   const servesClean = Math.max(0, Number(serves) || 0);
@@ -216,7 +229,7 @@ export function calculate({
       const onHand = Math.max(0, Number(stock[r.ingredient]) || 0);
       const shortfall = roundQty(Math.max(0, needed - onHand));
       const products = pricedProducts(ingredient.products, priceOverrides, donated);
-      const purchase = purchaseFor(shortfall, products, store, storeIds, ingredient);
+      const purchase = purchaseFor(shortfall, products, store, storeIds, ingredient, choices[r.ingredient]);
       purchase.donatedValue = donatedValueOf(purchase);
       return { id: r.ingredient, ingredient, perServe: r.perServe, needed, onHand, shortfall, products, purchase };
     });
@@ -289,6 +302,7 @@ export function calculateItems({
   sold = {},
   stock = {},
   donated = {},
+  choices = {},
   servesByMenu = {},
   bufferPct = 0,
   day2Pct = null,
@@ -328,7 +342,7 @@ export function calculateItems({
       }
       const shortfall = roundQty(Math.max(0, needed - onHand));
       const products = pricedProducts(ingredient.products, priceOverrides, donated);
-      const purchase = purchaseFor(shortfall, products, store, storeIds, ingredient);
+      const purchase = purchaseFor(shortfall, products, store, storeIds, ingredient, choices[r.ingredient]);
       purchase.donatedValue = donatedValueOf(purchase);
       const salePrice = Math.max(0, Number(r.salePrice) || 0);
       return {
@@ -566,7 +580,7 @@ export function withCustomItems(catalogue, items = []) {
  *
  * Bottles checked by eye keep their own line and what's left of them.
  */
-export function combineResults(parts, { catalogue, store = 'cheapest', stock = null }) {
+export function combineResults(parts, { catalogue, store = 'cheapest', stock = null, choices = {} }) {
   const storeIds = Object.keys(catalogue.stores);
   const byKey = new Map();
   for (const { menuId, result } of parts) {
@@ -585,7 +599,7 @@ export function combineResults(parts, { catalogue, store = 'cheapest', stock = n
   const lines = [...byKey.values()].map(({ left, ...e }) => {
     const onHand = e.byEye ? left : stock ? Math.max(0, Number(stock[e.id]) || 0) : 0;
     const shortfall = roundQty(Math.max(0, e.needed - onHand));
-    const purchase = purchaseFor(shortfall, e.products, store, storeIds, e.ingredient);
+    const purchase = purchaseFor(shortfall, e.products, store, storeIds, e.ingredient, choices[e.id]);
     purchase.donatedValue = donatedValueOf(purchase);
     return { ...e, onHand, shortfall, purchase };
   });
@@ -802,4 +816,18 @@ export function assembleCatalogue(base, storeFiles = []) {
     ingredients[id] = { ...ing, products };
   }
   return { ...base, ingredients };
+}
+
+/**
+ * The products a line could be bought as, for choosing one by hand: every
+ * product the stores in use sell, cheapest per unit first, each with how
+ * many it would take and what that costs.
+ * @returns {Array<{ product, count, units, total: number|null, unitPrice: number|null, cheapest: boolean }>}
+ */
+export function productOptions(line, store, storeIds) {
+  const pool = (line.products || []).filter((p) => p.packSize > 0 && (store === 'cheapest' ? storeIds.includes(p.store) : p.store === store));
+  return compareProducts(line.ingredient, pool).map(({ product, unitPrice: each, cheapest }) => {
+    const { packs, units, cost } = packsOf(product, line.shortfall);
+    return { product, count: packs[0]?.count ?? 0, units, total: product.donated ? 0 : cost, unitPrice: each, cheapest };
+  });
 }

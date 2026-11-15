@@ -12,6 +12,7 @@ const settings = {
   donated: { 'dk-eggs-12': true },
   active: { 'egg-bacon': false },
   stock: { bread: 2.5 },
+  choice: { bread: 'dk-bread-white' },
   carry: { sausages: 120 },
   customMenus: [{ id: 'recipe-burgers', name: 'Burgers', icon: '🍔', serveNoun: 'burger', defaultServes: 50, defaultSalePrice: 5 }],
   customItems: [{ id: 'custom-patties', menu: 'recipe-burgers', name: 'Beef patties', unit: 'patties', packSize: 10, price: 9, store: 'drakes', perServe: 1 }],
