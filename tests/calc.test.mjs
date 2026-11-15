@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { combineResults, byStore, stockShare, sumUsage, withCustomMenus, effectiveRecipe, cheapestPacks, calculate, calculateRestock, calculateItems, wizardProducts, applyWizardPrices, round2, withCustomItems, expectedDay2, recipeUsage, itemsUsage, leftoverEstimate } from '../assets/calc.js';
+import { stockLeft, carryForward, combineResults, byStore, stockShare, sumUsage, withCustomMenus, effectiveRecipe, cheapestPacks, calculate, calculateRestock, calculateItems, wizardProducts, applyWizardPrices, round2, withCustomItems, expectedDay2, recipeUsage, itemsUsage, leftoverEstimate } from '../assets/calc.js';
 
 const catalogue = JSON.parse(readFileSync(new URL('../data/catalogue.json', import.meta.url)));
 // Listed prices change every week, so tests read them rather than hard-coding them
@@ -437,4 +437,54 @@ test('applyWizardPrices keeps an estimate the user agreed with as their own pric
   const out = applyWizardPrices(catalogue, {}, { 'ww-sausages-24': listed('ww-sausages-24'), 'dk-bread-white': listed('dk-bread-white') });
   assert.equal(out['ww-sausages-24'], listed('ww-sausages-24'));
   assert.ok(!('dk-bread-white' in out));
+});
+
+test('stockLeft: what the day started with minus what has been used', () => {
+  assert.deepEqual(stockLeft({ sausages: 210, bread: 200, onions: 500 }, { sausages: 150, bread: 250 }), { sausages: 60, bread: 0, onions: 500 });
+});
+
+// A two-menu stall on day 1: 210 sausages and 200 slices to start with
+function restockFor({ sold, pct, start }) {
+  const opts = { catalogue, store: 'drakes' };
+  const parts = [{ menuId: 'sausage-sizzle', result: calculateRestock({ ...opts, menuId: 'sausage-sizzle', sold, day2Pct: pct, recipeOverrides: { onions: { enabled: false } } }) }];
+  const used = { sausages: sold, bread: sold };
+  return { used, result: combineResults(parts, { ...opts, stock: stockLeft(start, used) }) };
+}
+
+test('carryForward after a top-up: later estimates include what was bought', () => {
+  const start = { sausages: 210, bread: 200 };
+  // 1pm: 190 sold, half as many again expected: 95 needed, 20 sausages and 10 slices left
+  const { used, result } = restockFor({ sold: 190, pct: 50, start });
+  const snags = result.lines.find((l) => l.id === 'sausages');
+  assert.equal(snags.onHand, 20);
+  assert.equal(snags.purchase.units, 84); // 4 packs of 21 cover the 75 short
+  const carry = carryForward(start, result, 'today', used);
+  assert.equal(carry.sausages, 210 + 84);
+  // Straight after: nothing more to buy, and 104 on the stall
+  assert.equal(stockLeft(carry, used).sausages, 104);
+  const again = restockFor({ sold: 190, pct: 50, start: carry });
+  assert.equal(again.result.totalCost, 0);
+});
+
+test('carryForward at the end of a day: tomorrow starts with what is left plus the restock', () => {
+  const start = { sausages: 210, bread: 200 };
+  const { used, result } = restockFor({ sold: 180, pct: 100, start });
+  const snags = result.lines.find((l) => l.id === 'sausages');
+  assert.equal(snags.onHand, 30);
+  const carry = carryForward(start, result, 'next', used);
+  assert.equal(carry.sausages, 30 + snags.purchase.units);
+  assert.ok(carry.sausages >= 180);
+  // Day 2 then counts down from there
+  assert.equal(stockLeft(carry, { sausages: 100 }).sausages, carry.sausages - 100);
+});
+
+test('bottles checked by eye count down from what the day opened with', () => {
+  // Two bottles on the stall after a top-up, 1.2 left: 0.8 used, the same again expected
+  const r = calculateItems({ catalogue, menuId: 'consumables', day2Pct: 100, percentLeft: { oil: 120 }, opening: { oil: 2 } });
+  const oil = r.lines.find((l) => l.id === 'oil');
+  assert.equal(oil.sold, 0.8);
+  assert.equal(oil.shortfall, 0);
+  const all = combineResults([{ menuId: 'consumables', result: r }], { catalogue });
+  assert.equal(carryForward({}, all, 'today').oil, 2); // nothing bought, so the opening figure stands
+  assert.equal(carryForward({}, all, 'next').oil, 1.2);
 });

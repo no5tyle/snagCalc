@@ -47,9 +47,13 @@ function productRows(line) {
  *   for a restock, each food tab's day 1 sales
  * @param {number} [args.day2Pct]    restock: day 2's expected sales as a % of day 1's
  * @param {(id:string)=>string} [args.storeName]
+ * @param {object} [args.words]      restock wording: { soldWhen, target, targetWhen, pctLabel }
  * @returns {Array<Array<string|number>>}
  */
-export function buildSheet({ kind, mode, result, title, serveLabel = 'serves', serveNoun = 'serve', bufferPct = 0, salePrice = 0, sells = false, foodServes = [], day2Pct = 100, storeName = (s) => s ?? '' }) {
+export function buildSheet({ kind, mode, result, title, serveLabel = 'serves', serveNoun = 'serve', bufferPct = 0, salePrice = 0, sells = false, foodServes = [], day2Pct = 100, storeName = (s) => s ?? '', words = {} }) {
+  // What a restock is counted from and bought for, e.g. a later day or the rest of today
+  const w = { soldWhen: 'on day 1', target: 'day 2', targetWhen: 'on day 2', pctLabel: 'Day 2 sales, % of day 1', ...words };
+  const capTarget = w.target.charAt(0).toUpperCase() + w.target.slice(1);
   const restock = mode === 'restock';
   const rows = [[title]];
   const cell = {}; // named input cells, e.g. cell.serves = '$B$2'
@@ -62,9 +66,9 @@ export function buildSheet({ kind, mode, result, title, serveLabel = 'serves', s
   if (kind === 'recipe') {
     const cap = serveLabel.charAt(0).toUpperCase() + serveLabel.slice(1);
     if (restock) {
-      input('sold', `${cap} sold on day 1`, result.sold);
-      input('pct', 'Day 2 sales, % of day 1', result.day2Pct ?? day2Pct);
-      rows.push([`${cap} expected on day 2`, `=ROUNDUP(${cell.sold}*${cell.pct}/100,0)`]);
+      input('sold', `${cap} sold ${w.soldWhen}`, result.sold);
+      input('pct', w.pctLabel, result.day2Pct ?? day2Pct);
+      rows.push([`${cap} expected ${w.targetWhen}`, `=ROUNDUP(${cell.sold}*${cell.pct}/100,0)`]);
       cell.serves = `$B$${rows.length}`;
     } else {
       input('serves', `${cap} to sell`, result.serves);
@@ -74,7 +78,7 @@ export function buildSheet({ kind, mode, result, title, serveLabel = 'serves', s
     cols = ['item', 'per', 'unit', 'need', ...(restock ? ['have'] : []), 'product', 'store', 'size', 'packs', 'price', 'donated', 'cost', 'dvalue'];
   } else {
     const scaled = result.lines.some((l) => Number.isFinite(l.perServe));
-    if (restock) input('pct', 'Day 2 sales, % of day 1', day2Pct);
+    if (restock) input('pct', w.pctLabel, day2Pct);
     if (scaled) {
       for (const f of foodServes) input(`serves:${f.id}`, f.label, f.serves);
       input('buffer', 'Wastage buffer %', bufferPct);
@@ -86,8 +90,8 @@ export function buildSheet({ kind, mode, result, title, serveLabel = 'serves', s
     item: 'Item',
     per: kind === 'items' ? 'Per serve' : `Per ${serveNoun}`,
     unit: 'Unit',
-    need: restock ? (kind === 'items' ? 'Day 2 expected' : 'Day 2 need') : kind === 'items' ? 'Quantity' : 'Need',
-    sold: sells ? 'Sold on day 1' : 'Used on day 1',
+    need: restock ? (kind === 'items' ? `${capTarget} expected` : `${capTarget} need`) : kind === 'items' ? 'Quantity' : 'Need',
+    sold: `${sells ? 'Sold' : 'Used'} ${w.soldWhen}`,
     have: 'Have',
     product: 'Product',
     store: 'Store',
@@ -169,10 +173,10 @@ export function buildSheet({ kind, mode, result, title, serveLabel = 'serves', s
 
   if (kind === 'recipe') {
     if (!restock) rows.push([`Cost per ${serveNoun}`, `=IF(${cell.serves}>0,${totalCell}/${cell.serves},0)`]);
-    rows.push([restock ? 'Takings on day 2' : 'Takings if all sell', `=${cell.serves}*${cell.sale}`]);
+    rows.push([restock ? `Takings ${w.targetWhen}` : 'Takings if all sell', `=${cell.serves}*${cell.sale}`]);
     if (!restock) rows.push(['Profit if all sell', `=B${rows.length}-${totalCell}`]);
   } else if (sells) {
-    rows.push([restock ? 'Takings on day 2' : 'Takings if all sell', sum(C.takings)]);
+    rows.push([restock ? `Takings ${w.targetWhen}` : 'Takings if all sell', sum(C.takings)]);
     if (!restock) rows.push(['Profit if all sell', `=B${rows.length}-${totalCell}`]);
   }
   return rows;

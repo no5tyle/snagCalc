@@ -172,3 +172,16 @@ test('combined list sheet: one row per product, packs and total recalculated', (
   const rows = buildSheet({ kind: 'items', mode: 'plan', result: { lines: all.lines.map((l) => ({ ...l, planned: l.shortfall })) }, title: 'Test' });
   near(labelled(rows, evaluate(rows), 'Shopping total'), all.totalCost);
 });
+
+test('restock sheet uses the wording it is given for a later day or a top-up', () => {
+  const result = calculateRestock({ catalogue, menuId: 'sausage-sizzle', sold: 300, day2Pct: 50, store: 'drakes' });
+  const words = { soldWhen: 'so far today', target: 'the rest of today', targetWhen: 'for the rest of today', pctLabel: 'Rest of today, % of sales so far' };
+  const rows = buildSheet({ kind: 'recipe', mode: 'restock', result, title: 'Test', serveLabel: 'sausages', serveNoun: 'sausage', salePrice: 3, words });
+  const v = evaluate(rows);
+  near(labelled(rows, v, 'Sausages sold so far today'), 300);
+  near(labelled(rows, v, 'Sausages expected for the rest of today'), 150);
+  near(labelled(rows, v, 'Takings for the rest of today'), 450);
+  assert.ok(rows.some((r) => r[0] === 'Rest of today, % of sales so far'));
+  assert.ok(rows.some((r) => r.includes('The rest of today need')));
+  assert.ok(!rows.flat().some((c) => /day [12]/i.test(String(c))));
+});

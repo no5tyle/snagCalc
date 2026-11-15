@@ -4,7 +4,8 @@ import {
   expectedDay2,
   recipeUsage,
   itemsUsage,
-  leftoverEstimate,
+  stockLeft,
+  carryForward,
   calculateItems,
   effectiveRecipe,
   effectiveItems,
@@ -18,6 +19,7 @@ import {
   sumUsage,
 } from './calc.js';
 import { buildSheet, toTSV } from './sheet.js';
+import { planOf, encodePlan, decodePlan, planInHash } from './share.js';
 
 const STORAGE_KEY = 'snagcalc:v2';
 const OLD_STORAGE_KEY = 'snagcalc:v1';
@@ -85,7 +87,11 @@ function defaultSettings() {
     customItems: [],
     customMenus: [],
     active: {}, // { [menuId]: false } for menus not being sold
-    stock: {}, // stock counted after day 1, { [ingredientId]: amount in its stock unit }
+    stock: {}, // stock counted since the day began, { [ingredientId]: amount in its stock unit }
+    day: 1, // the day of the event that's running (or just finished)
+    carry: null, // what the day started with once a restock was bought, { [ingredientId]: base units }; before that it's the first shop
+    restockFor: 'next', // 'next' (tomorrow) or 'today' (a top-up for the rest of today)
+    topupPct: 50, // rest of today's sales as a % of sales so far
     ticks: {}, // items ticked off while shopping, { plan|restock: { [productId]: packs } }
     day2Pct: 100,
     menu: SHOP,
@@ -165,6 +171,36 @@ function save() {
   }
 }
 
+// ---------- Which day, and what a restock is for ----------
+
+const dayNow = () => (Number.isInteger(settings.day) && settings.day >= 1 ? settings.day : 1);
+/** A top-up for the rest of today, rather than a restock for tomorrow. */
+const topUp = () => settings.restockFor === 'today';
+const pctKey = () => (topUp() ? 'topupPct' : 'day2Pct');
+const pctNow = () => (Number.isFinite(settings[pctKey()]) ? settings[pctKey()] : 100);
+
+/** How a restock is worded: counted from today's sales, bought for the rest of today or for tomorrow. */
+function words() {
+  const d = dayNow();
+  return topUp()
+    ? {
+        soldWhen: 'so far today',
+        target: 'the rest of today',
+        targetWhen: 'for the rest of today',
+        pctLabel: 'Rest of today, % of sales so far',
+        title: d > 1 ? `Top-up for today (day ${d})` : 'Top-up for today',
+        after: 'Part-way through the day',
+      }
+    : {
+        soldWhen: `on day ${d}`,
+        target: `day ${d + 1}`,
+        targetWhen: `on day ${d + 1}`,
+        pctLabel: `Day ${d + 1} sales, % of day ${d}`,
+        title: `Day ${d + 1} restock`,
+        after: `After day ${d}`,
+      };
+}
+
 // ---------- Formatting ----------
 
 /** "1 bottle", "3 bottles": units are plain plurals (or g / ml, which stay as they are). */
@@ -226,7 +262,7 @@ function statsFor(result, restock) {
   if (result.donatedValue > 0) stats.push(['Donations worth', money(result.donatedValue)]);
   if (isItems()) {
     if (!menuDef().sells) return stats;
-    stats.push([restock ? 'Takings on day 2' : 'Takings if all sell', money(result.revenue)]);
+    stats.push([restock ? `Takings ${words().targetWhen}` : 'Takings if all sell', money(result.revenue)]);
     if (!restock) stats.push(['Profit if all sell', money(result.revenue - result.totalCost)]);
     return stats;
   }
@@ -238,8 +274,8 @@ function statsFor(result, restock) {
     stats.push(['Profit if all sell', money(revenue - result.totalCost)]);
   }
   if (restock) {
-    stats.push([`${cap(serveLabel())} expected on day 2`, num(result.expectedServes, 0)]);
-    stats.push([`Day 2 takings at ${money(sale)} each`, money(result.expectedServes * sale)]);
+    stats.push([`${cap(serveLabel())} expected ${words().targetWhen}`, num(result.expectedServes, 0)]);
+    stats.push([`Takings at ${money(sale)} each`, money(result.expectedServes * sale)]);
   }
   return stats;
 }
@@ -253,13 +289,13 @@ function byEyeRow(l) {
   const buy = l.purchase.packs.reduce((s, p) => s + p.count, 0);
   return `<tr>
     <td class="item"><strong>${esc(l.ingredient.name)}</strong></td>
-    <td class="num" data-label="Need"><div>${share(l.needed)}<span class="sub">for day 2</span></div></td>
+    <td class="num" data-label="Need"><div>${share(l.needed)}<span class="sub">for ${esc(words().target)}</span></div></td>
     <td class="num" data-label="Have"><div>${
       l.percentLeft == null ? 'Not checked<span class="sub">counted as empty</span>' : `${share(l.onHand)} left`
     }</div></td>
     <td data-label="Buy"><div>${
       l.shortfall <= 0
-        ? '<span class="none">No more needed</span><span class="sub">What’s left should last day 2</span>'
+        ? '<span class="none">No more needed</span><span class="sub">What’s left should last</span>'
         : `<strong>${buy > 1 ? `${buy} more ${esc(l.ingredient.unit)} needed` : `Another ${esc(one)} needed`}</strong>${buyCell(l)}`
     }</div></td>
     <td class="num" data-label="Cost"><div>${money(l.purchase.cost)}</div></td>
@@ -342,7 +378,7 @@ function servesByMenu(mode) {
   for (const id of foodMenuIds()) {
     const m = ms(id);
     const sold = m.restock.sold ?? 0;
-    out[id] = !isActive(id) ? 0 : mode === 'restock' ? expectedDay2(sold, settings.day2Pct) : mode === 'day1' ? sold : m.planServes ?? 0;
+    out[id] = !isActive(id) ? 0 : mode === 'restock' ? expectedDay2(sold, pctNow()) : mode === 'day1' ? sold : m.planServes ?? 0;
   }
   return out;
 }
@@ -356,10 +392,10 @@ function menuResult(id, mode, stock = {}) {
       ...common,
       itemOverrides: m.items,
       servesByMenu: servesByMenu(mode),
-      ...(mode === 'restock' ? { sold: m.restock.sold, stock, day2Pct: settings.day2Pct, percentLeft: m.restock.leftPct || {} } : {}),
+      ...(mode === 'restock' ? { sold: m.restock.sold, stock, day2Pct: pctNow(), percentLeft: m.restock.leftPct || {}, opening: settings.carry || {} } : {}),
     });
   }
-  if (mode === 'restock') return calculateRestock({ ...common, recipeOverrides: m.recipe, sold: m.restock.sold, day2Pct: settings.day2Pct, stock });
+  if (mode === 'restock') return calculateRestock({ ...common, recipeOverrides: m.recipe, sold: m.restock.sold, day2Pct: pctNow(), stock });
   return calculate({ ...common, recipeOverrides: m.recipe, serves: m.planServes });
 }
 
@@ -386,11 +422,20 @@ function usedOnDay1(ids) {
 const countedStock = () => stockInBaseUnits(settings.stock);
 
 /**
- * Stock left after day 1 in base units, for the whole stall: what the first
- * shop bought minus what day 1 used, unless someone has counted it.
+ * What the day started with, in base units: the first shop, or once a
+ * restock or top-up has been bought, what was carried forward from it.
+ */
+function startStock(ids) {
+  const first = Object.fromEntries(combined(ids, 'plan').lines.map((l) => [l.id, l.purchase.units]));
+  return { ...first, ...(settings.carry || {}) };
+}
+
+/**
+ * Stock left now in base units, for the whole stall: what the day started
+ * with minus what's been used since, unless someone has counted it.
  */
 function stockNow(ids) {
-  const estimates = leftoverEstimate(combined(ids, 'plan'), usedOnDay1(ids));
+  const estimates = stockLeft(startStock(ids), usedOnDay1(ids));
   return { estimates, stock: { ...estimates, ...countedStock() } };
 }
 
@@ -424,7 +469,7 @@ function takingsFor(ids, mode) {
   return ids.reduce((sum, id) => {
     if (isItems(id)) return sum + (menuDef(id).sells ? menuResult(id, mode).revenue : 0);
     const m = ms(id);
-    const serves = mode === 'restock' ? expectedDay2(m.restock.sold, settings.day2Pct) : m.planServes ?? 0;
+    const serves = mode === 'restock' ? expectedDay2(m.restock.sold, pctNow()) : m.planServes ?? 0;
     return sum + serves * (m.salePrice ?? 0);
   }, 0);
 }
@@ -434,7 +479,7 @@ function sheetText(result, mode, title) {
   const serves = servesByMenu(mode === 'restock' ? 'day1' : 'plan');
   const foodServes = foodMenuIds().map((id) => ({
     id,
-    label: `${cap(serveLabel(id))} ${mode === 'restock' ? 'sold on day 1' : 'to sell'}`,
+    label: `${cap(serveLabel(id))} ${mode === 'restock' ? `sold ${words().soldWhen}` : 'to sell'}`,
     serves: serves[id],
   }));
   return toTSV(
@@ -449,8 +494,9 @@ function sheetText(result, mode, title) {
       salePrice: ms().salePrice,
       sells: Boolean(menuDef().sells),
       foodServes,
-      day2Pct: settings.day2Pct,
+      day2Pct: pctNow(),
       storeName,
+      words: words(),
     })
   );
 }
@@ -486,24 +532,24 @@ function showDay2Summaries() {
   for (const el of document.querySelectorAll('#restock-inputs [data-summary]')) {
     const id = el.dataset.summary;
     const sold = ms(id).restock.sold ?? 0;
-    el.textContent = `Day 2: expect ${num(expectedDay2(sold, settings.day2Pct), 0)} ${serveLabel(id)} (${num(settings.day2Pct, 0)}% of ${num(sold, 0)}).`;
+    el.textContent = `${cap(words().target)}: expect ${num(expectedDay2(sold, pctNow()), 0)} ${serveLabel(id)} (${num(pctNow(), 0)}% of ${num(sold, 0)}).`;
   }
 }
 
 function renderRestockResults() {
   const result = restockResult();
   const menu = menuDef();
-  const pct = num(settings.day2Pct, 0);
+  const w = words();
   const heading = isItems()
-    ? `Snag Calc – ${menu.name}, day 2 restock (${pct}% of day 1)`
-    : `Snag Calc – day 2 restock, ${num(result.expectedServes, 0)} ${serveLabel()}`;
+    ? `Snag Calc – ${menu.name}, ${w.title.toLowerCase()} (${num(pctNow(), 0)}% of sales ${w.soldWhen})`
+    : `Snag Calc – ${w.title.toLowerCase()}, ${num(result.expectedServes, 0)} ${serveLabel()}`;
   const ids = menuSet(settings.menu);
   showDay2Summaries();
   showStockEstimates(stockNow(ids).estimates);
   const el = $('#restock-results');
   el.innerHTML = resultsCard(result, {
     restock: true,
-    title: `${menu.name}: day 2 shopping list`,
+    title: `${menu.name}: ${w.title.toLowerCase()}`,
     counted: countedStock(),
     shared: sharedIngredients(ids),
   });
@@ -558,13 +604,13 @@ function shopResultsHTML(result, mode, ids) {
   const stats = [['Shopping total', money(result.totalCost)]];
   if (groups.length > 1) for (const g of groups) stats.push([storeName(g.store), money(g.cost)]);
   if (result.donatedValue > 0) stats.push(['Donations worth', money(result.donatedValue)]);
-  stats.push([restock ? 'Takings on day 2' : 'Takings if all sell', money(takings)]);
+  stats.push([restock ? `Takings ${words().targetWhen}` : 'Takings if all sell', money(takings)]);
   if (!restock) stats.push(['Profit if all sell', money(takings - result.totalCost)]);
   const enough = restock ? result.lines.filter((l) => l.shortfall <= 0) : [];
   const nothing = !groups.length && !donated.length;
 
   const summary = `<div class="card">
-    <h2>${restock ? 'Day 2 restock' : 'First shop'}</h2>
+    <h2>${restock ? esc(words().title) : 'First shop'}</h2>
     <p class="hint">${esc(ids.map(menuLabel).join(', '))}${
       settings.store === 'cheapest' ? ', from whichever store is cheaper for each item' : `, all from ${esc(storeName(settings.store))}`
     }.</p>
@@ -581,6 +627,7 @@ function shopResultsHTML(result, mode, ids) {
       <button class="primary" data-copy="list">Copy shopping list</button>
       <button class="secondary" data-copy="sheet">Copy for spreadsheet</button>
       <button class="secondary" data-print>Print</button>
+      <button class="secondary" data-share>Share plan</button>
     </div>
   </div>`;
 
@@ -604,7 +651,22 @@ function shopResultsHTML(result, mode, ids) {
           enough.length ? `<p class="hint">Enough left already: ${esc(enough.map((l) => l.ingredient.name).join(', '))}.</p>` : ''
         }</div>`
       : '';
-  return summary + storeCards + donatedCard + tail;
+  // Once it's bought, the stock on the stall has changed: carry it forward
+  const d = dayNow();
+  const done = !restock
+    ? ''
+    : topUp()
+      ? `<div class="card done-card">
+      <h2>Bought the top-up?</h2>
+      <p class="hint">Add it to today’s stock, so the next restock knows it’s there. Sales so far stay as they are.</p>
+      <div class="actions"><button type="button" class="primary" data-roll="today">Add it to today’s stock</button></div>
+    </div>`
+      : `<div class="card done-card">
+      <h2>Bought it? Start day ${d + 1}</h2>
+      <p class="hint">What’s left plus this list becomes day ${d + 1}’s starting stock. Day ${d}’s sales and counts are cleared, ready for day ${d + 1}’s.</p>
+      <div class="actions"><button type="button" class="primary" data-roll="next">Start day ${d + 1}</button></div>
+    </div>`;
+  return summary + storeCards + donatedCard + tail + done;
 }
 
 /** The combined list as a plain table for a spreadsheet: one row per product to buy. */
@@ -626,7 +688,7 @@ function renderShopResults() {
     const restock = mode === 'restock';
     const now = restock ? stockNow(ids) : null;
     const result = combined(ids, mode, now?.stock);
-    const heading = `Snag Calc – ${restock ? `day 2 restock (${num(settings.day2Pct, 0)}% of day 1)` : 'first shop'}`;
+    const heading = `Snag Calc – ${restock ? `${words().title.toLowerCase()} (${num(pctNow(), 0)}% of sales ${words().soldWhen})` : 'first shop'}`;
     const el = $(`#${mode}-results`);
     el.innerHTML = shopResultsHTML(result, mode, ids);
     wireActions(el, {
@@ -739,20 +801,40 @@ function renderPlanInputs() {
   $('#plan-inputs').innerHTML = `<div data-menu-id="${esc(id)}">${offNotice(id)}${planInputsHTML(id)}</div>`;
 }
 
-/** The day 2 % field, shared by every tab, with quick picks. */
+/** Whether the restock is for tomorrow or a top-up for the rest of today. */
+function restockForField() {
+  const d = dayNow();
+  const pick = (value, label) =>
+    `<button type="button" class="chip" data-restock-for="${value}" aria-pressed="${(settings.restockFor === 'today') === (value === 'today')}">${label}</button>`;
+  return `<div class="pct-field restock-for">
+    <span class="field-label">Buying for</span>
+    <div class="chip-row" role="group" aria-label="Buying for">${pick('next', `Day ${d + 1}`)}${pick('today', 'The rest of today')}</div>
+  </div>`;
+}
+
+/** The % field, shared by every tab, with quick picks: how busy the time being bought for will be. */
 function day2PctField() {
-  return `<div class="pct-field">
-    <label>Day 2 sales, % of day 1
-      <span class="input-suffix"><input data-field="day2Pct" type="number" min="0" step="5" inputmode="numeric" value="${valueAttr(settings.day2Pct)}"><span>%</span></span>
+  const picks = topUp() ? [25, 50, 100] : [50, 75, 100];
+  return `${restockForField()}<div class="pct-field">
+    <label>${esc(words().pctLabel)}
+      <span class="input-suffix"><input data-field="day2Pct" type="number" min="0" step="5" inputmode="numeric" value="${valueAttr(pctNow())}"><span>%</span></span>
     </label>
-    <div class="chip-row" role="group" aria-label="Quick picks">${[50, 75, 100]
-      .map((p) => `<button type="button" class="chip" data-pct="${p}" aria-pressed="${settings.day2Pct === p}">${p}%</button>`)
+    <div class="chip-row" role="group" aria-label="Quick picks">${picks
+      .map((p) => `<button type="button" class="chip" data-pct="${p}" aria-pressed="${pctNow() === p}">${p}%</button>`)
       .join('')}</div>
   </div>`;
 }
 
-const LEFTOVER_HINT =
-  'Left over is worked out from what the first shop bought, minus what day 1 used. Count what’s really left and type it in to replace an estimate.';
+const leftoverHint = () =>
+  `Left over is worked out from what ${
+    settings.carry ? 'the day started with' : 'the first shop bought'
+  }, minus what’s been used since. Count what’s really left and type it in to replace an estimate.`;
+
+/** "After day 1, enter … Snag Calc works out what to buy for day 2, using up what's left first." */
+const restockIntro = (what) => {
+  const w = words();
+  return `${w.after}, enter ${what} and how busy you expect ${w.target} to be. Snag Calc works out what to buy for ${w.target}, using up what’s left first.`;
+};
 
 function stockField(ingredientId, label) {
   const ing = catalogue.ingredients[ingredientId];
@@ -779,17 +861,17 @@ function restockInputsHTML(id, { embedded = false, seen = new Set() } = {}) {
     return `${
       embedded
         ? ''
-        : '<p class="hint">After day 1, enter how many sold and how busy you expect day 2 to be. Snag Calc works out what to buy for day 2, using up what’s left first.</p>'
+        : `<p class="hint">${restockIntro('how many sold')}</p>`
     }
       <div class="grid-2">
-        <label>${esc(cap(label))} sold on day 1
+        <label>${esc(cap(label))} sold ${esc(words().soldWhen)}
           <input data-field="restock.sold" type="number" min="0" step="1" inputmode="numeric" value="${valueAttr(m.restock.sold)}">
         </label>
         ${embedded ? '' : day2PctField()}
       </div>
       <p class="summary" data-summary="${esc(id)}"></p>
       <h3>Stock left over</h3>
-      ${embedded ? '' : `<p class="hint">${LEFTOVER_HINT}${shared.size ? ' Count everything on the stall: what’s shared with another tab is split between them.' : ''}</p>`}
+      ${embedded ? '' : `<p class="hint">${leftoverHint()}${shared.size ? ' Count everything on the stall: what’s shared with another tab is split between them.' : ''}</p>`}
       <div class="stock-grid">${fresh.map((r) => stockField(r.ingredient, catalogue.ingredients[r.ingredient].name)).join('')}</div>
       ${above.length ? `<p class="hint small">${esc(above.join(', '))}: counted above.</p>` : ''}`;
   }
@@ -799,13 +881,13 @@ function restockInputsHTML(id, { embedded = false, seen = new Set() } = {}) {
   return `${
     embedded
       ? ''
-      : `<p class="hint">After day 1, enter how many of each were ${did} and how busy you expect day 2 to be. Snag Calc works out what to buy for day 2, using up what’s left first.${
+      : `<p class="hint">${restockIntro(`how many of each were ${did}`)}${
           scaled
-            ? ` Sauces follow day 2’s expected food sales (from day 1 sales on their Restock tabs): <strong>${esc(foodServesText('restock'))}</strong>.`
+            ? ` Sauces follow the food sales expected (from sales on their Restock tabs): <strong>${esc(foodServesText('restock'))}</strong>.`
             : ''
         }</p>
     <div class="grid-2">${day2PctField()}</div>
-    <p class="hint">${LEFTOVER_HINT}</p>`
+    <p class="hint">${leftoverHint()}</p>`
   }
     <div class="item-grid">${items
       .map((r) => {
@@ -831,7 +913,7 @@ function restockInputsHTML(id, { embedded = false, seen = new Set() } = {}) {
           ${
             perServe
               ? '<span aria-hidden="true"></span>'
-              : `<label>${cap(did)} on day 1
+              : `<label>${cap(did)} ${esc(words().soldWhen)}
             <span class="input-suffix"><input type="number" min="0" step="1" inputmode="numeric" data-sold="${esc(r.ingredient)}"
               value="${valueAttr(m.restock.sold[r.ingredient])}" placeholder="0"><span>${esc(ing.unit)}</span></span>
           </label>`
@@ -888,8 +970,8 @@ function renderShopInputs() {
 
   const ids = activeMenus();
   const seen = new Set();
-  $('#restock-inputs').innerHTML = `<h2>Restock for day 2</h2>
-    <p class="hint">After day 1, enter what sold and how busy you expect day 2 to be. Snag Calc buys day 2’s expected sales minus what’s left. ${LEFTOVER_HINT}</p>
+  $('#restock-inputs').innerHTML = `<h2>${esc(words().title)}</h2>
+    <p class="hint">${restockIntro('what sold')} ${leftoverHint()}</p>
     <div class="grid-2">${day2PctField()}</div>
     ${ids.length ? '' : '<p class="hint">Nothing is switched on. Switch on what you’re selling on the Plan view.</p>'}
     ${ids.map((id) => shopSection(id, 'restock', restockInputsHTML(id, { embedded: true, seen }))).join('')}`;
@@ -1324,6 +1406,124 @@ function renderMenu() {
   renderResults();
 }
 
+// ---------- Moving through the event ----------
+
+const clearCounts = () => {
+  settings.stock = {};
+  settings.ticks = { ...settings.ticks, restock: {} };
+};
+
+/**
+ * The restock list has been bought. For a top-up it joins today's stock; at
+ * the end of a day, what's left plus the list becomes tomorrow's starting
+ * stock and the day's sales are cleared.
+ */
+async function boughtRestock(kind) {
+  const d = dayNow();
+  const sure = await confirmAction(
+    kind === 'today'
+      ? { title: 'Add the top-up to today’s stock?', message: 'Do this once it’s bought. Stock counts you typed in are replaced by the new estimate.', confirmLabel: 'Add it' }
+      : { title: `Start day ${d + 1}?`, message: `Do this once the list is bought. Day ${d}’s sales and stock counts are cleared, and can’t be brought back.`, confirmLabel: `Start day ${d + 1}` }
+  );
+  if (!sure) return;
+  const ids = activeMenus();
+  const result = combined(ids, 'restock', stockNow(ids).stock);
+  settings.carry = carryForward(startStock(ids), result, kind, usedOnDay1(ids));
+  for (const l of result.lines.filter((x) => x.byEye)) {
+    // A bottle checked by eye: after a top-up there's what was left plus what was bought
+    const r = ms(l.menus[0]).restock;
+    r.leftPct = { ...r.leftPct };
+    if (kind === 'today') r.leftPct[l.id] = Math.round((l.onHand + l.purchase.units) * 100);
+    else delete r.leftPct[l.id];
+  }
+  clearCounts();
+  if (kind === 'next') {
+    for (const id of menuIds()) {
+      const r = ms(id).restock;
+      r.sold = isItems(id) ? {} : 0;
+      r.leftPct = {};
+    }
+    settings.day = d + 1;
+    settings.restockFor = 'next';
+  }
+  save();
+  renderMenu();
+  window.scrollTo({ top: 0 });
+}
+
+/** A fresh event: prices, recipes and what's planned stay; sales, stock counts and the day go. */
+async function newEvent() {
+  const sure = await confirmAction({
+    title: 'Start a new event?',
+    message: 'Sales, stock counts and ticks are cleared and it’s day 1 again. Your prices, recipes and planned numbers stay.',
+    confirmLabel: 'New event',
+  });
+  if (!sure) return;
+  for (const id of Object.keys(settings.menus)) {
+    const m = settings.menus[id];
+    if (m) m.restock = catalogue.menu[id] && !isItems(id) ? { sold: 0 } : { sold: {} };
+  }
+  settings.stock = {};
+  settings.ticks = {};
+  settings.carry = null;
+  settings.day = 1;
+  settings.restockFor = 'next';
+  save();
+  renderMenu();
+  selectView('plan');
+  window.scrollTo({ top: 0 });
+}
+
+// ---------- Sharing a plan as a link ----------
+
+async function sharePlan(btn) {
+  const url = `${location.origin}${location.pathname}#plan=${await encodePlan(settings)}`;
+  const label = btn.textContent;
+  const flash = (text) => {
+    btn.textContent = text;
+    setTimeout(() => (btn.textContent = label), 2000);
+  };
+  if (navigator.share) {
+    try {
+      await navigator.share({ title: 'Snag Calc plan', text: 'Our BBQ plan in Snag Calc', url });
+      return;
+    } catch (err) {
+      if (err?.name === 'AbortError') return; // closed the share sheet
+    }
+  }
+  flash((await copyText(url)) ? 'Link copied!' : "Couldn't copy");
+}
+
+/** The plan in the link that was opened, if any: null for none, false if it can't be read. Drops it from the address bar. */
+async function takeSharedPlan() {
+  const code = planInHash(location.hash);
+  if (!code) return null;
+  history.replaceState(null, '', location.pathname + location.search);
+  return (await decodePlan(code)) || false;
+}
+
+const adoptPlan = (plan) => ({ ...defaultSettings(), ...plan, wizardDone: true });
+
+/** A link with a plan in it was opened in a browser that has a plan of its own: ask before replacing it. */
+async function offerSharedPlan(plan) {
+  if (plan === null) return;
+  if (plan === false) {
+    await confirmAction({ title: 'That link didn’t work', message: 'The plan in it couldn’t be read. Ask for it to be shared again.', confirmLabel: 'OK' });
+    return;
+  }
+  if (JSON.stringify(planOf(settings)) === JSON.stringify(plan)) return; // already have it
+  const sure = await confirmAction({
+    title: 'Open the shared plan?',
+    message: 'It replaces the plan saved in this browser: what’s being sold, prices, recipes, sales and stock counts.',
+    confirmLabel: 'Open it',
+  });
+  if (!sure) return;
+  settings = adoptPlan(plan);
+  save();
+  closeWizard();
+  init();
+}
+
 // ---------- Actions ----------
 
 async function copyText(text) {
@@ -1360,6 +1560,8 @@ function wireActions(container, getters) {
     });
   }
   container.querySelector('[data-print]')?.addEventListener('click', () => window.print());
+  container.querySelector('[data-share]')?.addEventListener('click', (e) => sharePlan(e.currentTarget));
+  for (const btn of container.querySelectorAll('[data-roll]')) btn.addEventListener('click', () => boughtRestock(btn.dataset.roll));
 }
 
 // ---------- Price wizard ----------
@@ -1653,7 +1855,7 @@ const nonNeg = (v) => Math.max(0, toNumber(v) ?? 0);
 
 function syncPctChips() {
   for (const c of document.querySelectorAll('#restock-inputs [data-pct]')) {
-    c.setAttribute('aria-pressed', String(Number(c.dataset.pct) === settings.day2Pct));
+    c.setAttribute('aria-pressed', String(Number(c.dataset.pct) === pctNow()));
   }
 }
 
@@ -1714,7 +1916,7 @@ function bindInputs() {
         if (clamp == null) delete settings.stock[stock];
         else settings.stock[stock] = clamp;
       } else if (field === 'day2Pct') {
-        settings.day2Pct = nonNeg(t.value);
+        settings[pctKey()] = nonNeg(t.value);
         syncPctChips();
       } else if (!m) return;
       else if (field === 'planServes') m.planServes = nonNeg(t.value);
@@ -1791,10 +1993,17 @@ function bindInputs() {
   });
 
   $('#restock-inputs').addEventListener('click', (e) => {
+    const mode = e.target.closest('[data-restock-for]')?.dataset.restockFor;
+    if (mode) {
+      settings.restockFor = mode;
+      save();
+      renderMenu();
+      return;
+    }
     const chip = e.target.closest('[data-pct]');
     if (!chip) return;
-    settings.day2Pct = Number(chip.dataset.pct);
-    $('#restock-inputs [data-field=day2Pct]').value = settings.day2Pct;
+    settings[pctKey()] = Number(chip.dataset.pct);
+    $('#restock-inputs [data-field=day2Pct]').value = pctNow();
     syncPctChips();
     changed();
   });
@@ -1858,6 +2067,9 @@ function bindInputs() {
     if (e.target === e.currentTarget) e.currentTarget.close('cancel');
   });
 
+  $('#new-event').addEventListener('click', newEvent);
+  for (const btn of document.querySelectorAll('[data-share-plan]')) btn.addEventListener('click', () => sharePlan(btn));
+
   $('#reset').addEventListener('click', async () => {
     const sure = await confirmAction({
       title: 'Reset everything?',
@@ -1900,8 +2112,28 @@ async function start() {
       If you opened index.html straight from disk, run a local web server instead (see README).</div>`;
     return;
   }
+  // A shared link opened in a browser with no plan of its own just loads; otherwise it asks first
+  const fresh = !readJSON(STORAGE_KEY);
   settings = loadSettings();
+  const shared = await takeSharedPlan();
+  if (shared && fresh) settings = adoptPlan(shared);
   init();
+  if (!(shared && fresh)) offerSharedPlan(shared);
+  window.addEventListener('hashchange', async () => offerSharedPlan(await takeSharedPlan()));
+  watchConnection();
+}
+
+/** Keep the page working with no signal: sw.js saves it, and the price list, on the phone. */
+function watchConnection() {
+  const show = () => ($('#offline-note').hidden = navigator.onLine !== false);
+  window.addEventListener('online', show);
+  window.addEventListener('offline', show);
+  show();
+  if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
+    navigator.serviceWorker.register('sw.js').catch(() => {
+      /* the page still works online without it */
+    });
+  }
 }
 
 start();

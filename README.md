@@ -10,6 +10,12 @@ The **Shop** tab is the whole order on one page. Switch on what you're selling (
 - A menu that's switched off is left off the Shop list, and its serves don't count towards sauces.
 - **Your own recipes:** selling burgers or pancakes? **Add your own recipe** gives it a tab like the built-in ones. Say what goes into each serve: ingredients already on the price list (bread, onions, bacon…) or new ones with a pack size, price and store. You can also add an ingredient to a built-in recipe, or an item to Consumables, under **Recipe & prices**.
 
+- **Share a plan:** **Share plan** makes a link that carries the whole plan (what's being sold, prices, recipes, sales and stock counts). Whoever opens it sees the same numbers, so one person can plan and another restock. It's a copy, not a live link: share it again after changing something.
+- **Buying for the rest of today, or tomorrow:** on the Restock view, **Buying for** switches between a restock for the next day and a top-up part-way through the day (sales so far, and how busy the rest of the day will be as a % of that).
+- **More than two days:** once a restock is bought, **Start day 3** (and so on) carries what's left plus what was bought into the next day, and clears the day's sales ready for the new ones. After a top-up, **Add it to today's stock** does the same without ending the day.
+- **Start a new event** (under Recipe & prices) clears sales, stock counts and ticks, and keeps prices, recipes and planned numbers.
+- **Works with no signal:** after the first visit the page, the price list and your plan are saved on the phone, so it opens with poor or no reception. It can be added to the home screen.
+
 Each menu also has its own tab, with its own Plan, Restock and Recipe & prices views, for the detail (cost per serve, profit, the recipe).
 
 - **Plan (sausages, egg & bacon):** enter how many you want to sell. Snag Calc works out how much of each ingredient you need, picks the cheapest mix of pack sizes, and totals the cost. It also shows cost per serve and the expected profit.
@@ -75,7 +81,10 @@ That adds it for everyone. One person can add a recipe just for their own browse
 index.html                 page
 assets/calc.js             pure calculation logic (pack optimisation, plan, restock, combined list)
 assets/sheet.js            spreadsheet export (tab-separated rows with formulas)
+assets/share.js            a plan as a link, and back (checked on the way in)
 assets/app.js              UI
+sw.js                      service worker: keeps the page working with no signal
+manifest.webmanifest       name and icons for adding it to a home screen
 assets/styles.css          styles (light/dark, mobile, print)
 data/catalogue.json        products, prices, recipes
 scripts/update-prices.mjs  price updater used by the scheduled workflow

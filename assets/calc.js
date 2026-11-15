@@ -232,7 +232,9 @@ export function effectiveItems(catalogue, menuId, overrides = {}) {
  * instead: `percentLeft` ({ [ingredientId]: % of a bottle }) says how much is
  * left, 100 per unopened bottle. Day 1 used the planned bottles minus that,
  * day 2 needs day2Pct% of it, and another bottle is bought only if what's
- * left won't cover it. Not checked yet counts as empty.
+ * left won't cover it. Not checked yet counts as empty. `opening`
+ * ({ [ingredientId]: bottles }) replaces the planned bottles as what the day
+ * started with, for a later day or after a top-up.
  *
  * Revenue is quantity × salePrice for lines still to sell.
  */
@@ -249,6 +251,7 @@ export function calculateItems({
   bufferPct = 0,
   day2Pct = null,
   percentLeft = {},
+  opening = {},
 }) {
   const restock = day2Pct != null;
   const storeIds = Object.keys(catalogue.stores);
@@ -271,7 +274,9 @@ export function calculateItems({
       let onHand;
       if (byEye) {
         // Fractions of a bottle: what day 1 used, scaled to day 2, without rounding up
-        soldQty = roundQty(Math.max(0, planned - left));
+        // What there was at the start of the day: the planned bottles, or `opening` once stock carries over
+        const open = opening[r.ingredient] != null && Number.isFinite(Number(opening[r.ingredient])) ? Math.max(0, Number(opening[r.ingredient])) : planned;
+        soldQty = roundQty(Math.max(0, open - left));
         needed = roundQty((soldQty * Math.max(0, Number(day2Pct) || 0)) / 100);
         onHand = left;
       } else {
@@ -528,7 +533,7 @@ export function combineResults(parts, { catalogue, store = 'cheapest', stock = n
       let e = byKey.get(key);
       if (!e) {
         e = { id: l.id, ingredient: l.ingredient, products: l.products, needed: 0, menus: [] };
-        if (l.byEye) Object.assign(e, { byEye: true, percentLeft: l.percentLeft, left: l.onHand });
+        if (l.byEye) Object.assign(e, { byEye: true, percentLeft: l.percentLeft, left: l.onHand, used: l.sold });
         byKey.set(key, e);
       }
       e.needed = roundQty(e.needed + l.needed);
@@ -590,5 +595,35 @@ export function stockShare(stock, needs, menuId) {
 export function sumUsage(maps) {
   const out = {};
   for (const m of maps) for (const [id, v] of Object.entries(m)) out[id] = roundQty((out[id] || 0) + (Number(v) || 0));
+  return out;
+}
+
+/**
+ * Stock left of each ingredient: what the day started with minus what's been
+ * used since. A starting point until someone counts.
+ */
+export function stockLeft(start, used = {}) {
+  const out = {};
+  for (const [id, v] of Object.entries(start)) out[id] = roundQty(Math.max(0, (Number(v) || 0) - (Number(used[id]) || 0)));
+  return out;
+}
+
+/**
+ * The stock a day starts with once a restock list has been bought.
+ *
+ * `result` is the combined restock (combineResults with stock). For
+ * `kind: 'next'` the day is over: tomorrow starts with what's left plus
+ * what was bought. For `kind: 'today'` it's a top-up part-way through the
+ * day: the day's starting stock grows by what was bought, so that taking
+ * off everything used today (`used`) still gives what's on the stall.
+ *
+ * @returns {object} `start` merged with the new figures, { [ingredientId]: units }
+ */
+export function carryForward(start, result, kind, used = {}) {
+  const out = { ...start };
+  for (const l of result.lines) {
+    const usedToday = kind === 'today' ? (l.byEye ? l.used || 0 : Number(used[l.id]) || 0) : 0;
+    out[l.id] = roundQty(l.onHand + l.purchase.units + usedToday);
+  }
   return out;
 }

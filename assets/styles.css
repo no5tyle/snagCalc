@@ -568,3 +568,9 @@ dialog.sheet-dialog::backdrop { background: rgba(0, 0, 0, 0.35); -webkit-backdro
   dialog.sheet-dialog, .on-shop #plan-inputs, .on-shop #restock-inputs { display: none !important; }
   .shop-item a { display: none; }
 }
+
+/* ---------------------------------------------------------------- Restock: what it's for, and moving on */
+.field-label { color: var(--text-2); font-size: 0.9375rem; font-weight: 500; }
+.done-card .hint { margin-bottom: 0; }
+.offline-note { padding: 0.5rem 0.9rem; border-radius: var(--radius); background: var(--warning-bg); color: var(--warning-text); }
+@media print { .done-card, .offline-note { display: none !important; } }
