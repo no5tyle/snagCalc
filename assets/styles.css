@@ -55,6 +55,12 @@ body {
   background: var(--bar-bg);
   -webkit-backdrop-filter: var(--bar-filter); backdrop-filter: var(--bar-filter);
 }
+/* The "still being built" banner under the bar */
+.dev-banner {
+  margin: 12px max(16px, calc((100% - 928px) / 2)) 0;
+  padding: 0.6rem 1rem; border-radius: var(--radius-lg);
+  background: var(--warning-bg); color: var(--warning-text); font-size: 0.95rem; line-height: 1.4;
+}
 .appbar n5-app-switcher { --n5-switch-size: var(--n5-bar-icon); }
 .appbar-brand { display: flex; flex-direction: column; min-width: 0; line-height: 1.25; }
 .brand-title { margin: 0; font-size: var(--n5-bar-title-size); font-weight: 700; letter-spacing: -0.01em; white-space: nowrap; }
@@ -285,7 +291,7 @@ input[type=checkbox].switch:checked::after { transform: translateX(20px); }
 
 @media print {
   :root { color-scheme: light; }
-  .appbar .brand-sub, n5-app-switcher, .toolbar, .tabs, .menu-tabs, .hint.small, .actions, .site-footer, #panel-settings, .stock-grid, .hint { display: none !important; }
+  .appbar .brand-sub, n5-app-switcher, .toolbar, .tabs, .menu-tabs, .hint.small, .actions, .site-footer, .dev-banner, #panel-settings, .stock-grid, .hint { display: none !important; }
   body { background: #fff; color: #000; }
   .card { padding: 0; }
   .stat { background: none; padding: 0; }
@@ -431,6 +437,7 @@ dialog.confirm-dialog::backdrop { background: rgba(0, 0, 0, 0.35); -webkit-backd
     border-right: 0.5px solid var(--border);
   }
   .frame > main { width: 100%; padding-top: 16px; padding-inline: 24px; }
+  .dev-banner { margin: 12px 24px; }
   .toolbar { grid-template-columns: 1fr; margin: 0; }
   /* The item tabs become the sidebar's list of pages */
   .menu-tabs {
