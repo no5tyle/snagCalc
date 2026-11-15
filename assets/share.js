@@ -59,6 +59,7 @@ const SHAPE = {
   donated: mapOf((v) => (v === true ? true : undefined)),
   active: mapOf((v) => (v === false ? false : undefined)),
   stock: mapOf(count),
+  packs: mapOf(count),
   carry: (v) => (isObj(v) ? mapOf(count)(v) : undefined),
   customItems: listOf(customItem),
   customMenus: listOf(customMenu),

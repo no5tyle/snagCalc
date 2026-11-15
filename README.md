@@ -16,6 +16,9 @@ The **Shop** tab is the whole order on one page. Switch on what you're selling (
 - **Start a new event** (under Recipe & prices) clears sales, stock counts and ticks, and keeps prices, recipes and planned numbers.
 - **Works with no signal:** after the first visit the page, the price list and your plan are saved on the phone, so it opens with poor or no reception. It can be added to the home screen.
 
+- **Specials and prices to check:** an item on special is marked with its usual price, and the list says how much more it would cost at usual prices, for anyone shopping in a later week. Prices that are estimates, or were checked over a month ago, are flagged with a link to the price check.
+- **Edit what you've added:** an ingredient, drink or item you added has an **Edit** link under Recipe & prices for its name, pack size, price and store. For bread and bacon you can set how many usable slices or rashers you get from a pack.
+
 Each menu also has its own tab, with its own Plan, Restock and Recipe & prices views, for the detail (cost per serve, profit, the recipe).
 
 - **Plan (sausages, egg & bacon):** enter how many you want to sell. Snag Calc works out how much of each ingredient you need, picks the cheapest mix of pack sizes, and totals the cost. It also shows cost per serve and the expected profit.
@@ -45,6 +48,7 @@ The page loads `data/catalogue.json` with `fetch`, so it needs a web server. Ope
 ```sh
 npm start          # python3 -m http.server 8000, then open http://localhost:8000
 npm test           # unit tests for the calculator (Node 20+)
+npm run test:e2e   # the real page in a browser at phone width (needs `npm ci` and `npx playwright install chromium` first)
 ```
 
 ## Prices and products (`data/catalogue.json`)
@@ -52,19 +56,20 @@ npm test           # unit tests for the calculator (Node 20+)
 Everything the calculator knows lives in one JSON file:
 
 - `ingredients`: each ingredient has a base `unit` (sausages, slices, g, ml…). Its `stockUnit` sets how leftover stock is counted (for example, bread is counted in loaves of 20 slices). Its `products` lists what each store sells.
-- Each product has a `store`, `packSize` (in the base unit), `packLabel`, `price` and `priceUpdated`.
+- Each product has a `store`, `packSize` (in the base unit), `packLabel`, `price` and `priceUpdated`. `regularPrice` is set while it's on special. `"packApprox": true` marks a pack whose count is a judgement (slices in a loaf), which people can change on the site.
 - `menu`: one entry per tab. A normal menu item has a `recipe` with the quantity used per serve (`perServe`). A menu with `"kind": "items"` (drinks, consumables) instead lists a `quantity` for each item, plus a `salePrice` if `"sells": true`. An item with `perServe` instead of `quantity` is scaled from the food menus' serves; `servesFrom` limits which menus count (e.g. mustard: `["sausage-sizzle"]`).
 
 > ⚠️ **Every item has a Woolworths product and a Drakes product, so either store can supply the whole list. Drakes prices are read from the Drakes Aston Hills online store (last checked 2026-11-15) and refresh weekly. Woolworths prices were checked on 2026-11-07 against the group's shopping list, except sausages, eggs, bacon, gloves and the Coke-brand drinks, which are still placeholder estimates.** Prices without a `priceUpdated` date show as "estimate" on the site. Update prices by hand, or add stockcodes and URLs so the updater can fetch them (see below).
 
-### Automatic price updates
+### Keeping prices up to date
 
-`.github/workflows/update-prices.yml` runs `scripts/update-prices.mjs` every week (and on demand from the Actions tab). If any price changed, it commits the new catalogue.
+`.github/workflows/update-prices.yml` runs `scripts/update-prices.mjs` every week (and on demand from the Actions tab). If any price changed, it commits the new catalogue. The run's summary page lists what changed, what's on special, lookups that failed, and prices worth checking by hand.
 
-- **Woolworths:** set `stockcode` on a product. It's the number in the product URL, e.g. `woolworths.com.au/shop/productdetails/`**`123456`**`/...`. The script uses the Woolworths product API.
-- **Drakes (or any store):** set `url` to the product page. The script reads the price from the page's structured data (JSON-LD or meta tags).
+- **Drakes (or any store):** set `url` to the product page. The script reads the price from the page's structured data, and for Drakes the "save $x" sticker, so a special keeps the usual price as `regularPrice`.
+- **Woolworths:** set `stockcode` on a product. It's the number in the product URL, e.g. `woolworths.com.au/shop/productdetails/`**`123456`**`/...`. **Woolworths blocks requests from GitHub's servers, so the weekly run does not refresh Woolworths prices.** Run `npm run update-prices` from a home connection to refresh the products that have a stockcode, then commit the result.
+- **By hand:** `npm run set-prices -- ww-eggs-12=6.20 ww-bacon-1kg=13` records prices someone checked in store and marks them checked today. On the site, **Copy my prices** (under Recipe & prices, once you've entered a price) copies your prices in that form to send to whoever keeps the list; the text can be piped in as it is: `npm run set-prices < prices.txt`.
 
-Products with no stockcode or url are skipped. A failed lookup keeps the old price and is logged. Neither supermarket has an official public API, and both may block automated requests from GitHub's servers, so treat automatic updates as best-effort. Drakes prices also vary between stores, which is why each person can override prices on the site.
+A looked-up product whose name doesn't resemble the catalogue's is refused, so a wrong stockcode can't write a wrong price. Products with no stockcode or url are skipped. A failed lookup keeps the old price. Drakes prices also vary between stores, which is why each person can override prices on the site.
 
 ## Adding more menu items
 
@@ -88,5 +93,8 @@ manifest.webmanifest       name and icons for adding it to a home screen
 assets/styles.css          styles (light/dark, mobile, print)
 data/catalogue.json        products, prices, recipes
 scripts/update-prices.mjs  price updater used by the scheduled workflow
+scripts/price-rules.mjs    what the updater does with a looked-up price (specials, wrong-product check)
+scripts/set-prices.mjs     record prices checked by hand
 tests/                     node:test unit tests
+tests/e2e/                 browser tests (Playwright)
 ```

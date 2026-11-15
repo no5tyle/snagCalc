@@ -107,7 +107,8 @@ export function effectiveRecipe(catalogue, menuId, overrides = {}) {
  */
 export function pricedProducts(products, priceOverrides = {}, donated = {}) {
   return products.map((p) => {
-    const q = Number.isFinite(priceOverrides[p.id]) ? { ...p, price: priceOverrides[p.id], overridden: true } : p;
+    // The user's own price replaces the listed one, and whether that was a special
+    const q = Number.isFinite(priceOverrides[p.id]) ? { ...p, price: priceOverrides[p.id], regularPrice: undefined, overridden: true } : p;
     return donated[p.id] ? { ...q, price: 0, value: Number.isFinite(q.price) ? q.price : 0, donated: true } : q;
   });
 }
@@ -624,6 +625,75 @@ export function carryForward(start, result, kind, used = {}) {
   for (const l of result.lines) {
     const usedToday = kind === 'today' ? (l.byEye ? l.used || 0 : Number(used[l.id]) || 0) : 0;
     out[l.id] = roundQty(l.onHand + l.purchase.units + usedToday);
+  }
+  return out;
+}
+
+/**
+ * Apply the user's own pack sizes ({ [productId]: size }) to a copy of the
+ * catalogue: how many usable slices they get from a loaf, or rashers from a
+ * kilo of bacon. Stock counted in that pack (loaves) follows the first
+ * changed product of the same size.
+ */
+export function withPackSizes(catalogue, packs = {}) {
+  if (!packs || !Object.keys(packs).length) return catalogue;
+  const ingredients = {};
+  for (const [id, ing] of Object.entries(catalogue.ingredients)) {
+    let stockUnit = ing.stockUnit;
+    const products = ing.products.map((p) => {
+      const size = Number(packs[p.id]);
+      if (!(size >= 1) || size === p.packSize) return p;
+      if (stockUnit === ing.stockUnit && stockUnit?.size === p.packSize && stockUnit.size > 1) stockUnit = { ...stockUnit, size };
+      return { ...p, packSize: size, packLabel: `${size} ${ing.unit}, your count`, packOverridden: true };
+    });
+    ingredients[id] = { ...ing, stockUnit, products };
+  }
+  return { ...catalogue, ingredients };
+}
+
+/** Whole days from an ISO date to `today` (ISO date); null if either isn't a date. */
+export function daysSince(iso, today) {
+  const a = Date.parse(`${iso}T00:00:00Z`);
+  const b = Date.parse(`${today}T00:00:00Z`);
+  return Number.isNaN(a) || Number.isNaN(b) ? null : Math.round((b - a) / 86400000);
+}
+
+/** Listed prices checked longer ago than this are flagged as worth checking. */
+export const STALE_DAYS = 30;
+
+/**
+ * How far to trust a product's price (after pricedProducts):
+ * 'own' (the user's, donated or added by them), 'estimate' (never checked),
+ * 'stale' (checked over STALE_DAYS ago) or 'checked'.
+ */
+export function priceStatus(product, today) {
+  if (product.overridden || product.donated || product.custom) return 'own';
+  if (!product.priceUpdated) return 'estimate';
+  const age = daysSince(product.priceUpdated, today);
+  return age != null && age > STALE_DAYS ? 'stale' : 'checked';
+}
+
+/** Whether a listed price is a special, with the usual price known. */
+export const onSpecial = (product) =>
+  !product.overridden && !product.donated && Number.isFinite(product.regularPrice) && Number.isFinite(product.price) && product.regularPrice > product.price;
+
+/**
+ * What to know about the prices behind a shopping list: how many products
+ * on it are estimates or stale, how many are on special, and how much more
+ * the list would cost at usual prices.
+ */
+export function priceNotes(result, today) {
+  const out = { estimates: 0, stale: 0, specials: 0, specialSaving: 0 };
+  for (const line of result.lines) {
+    for (const { product, count } of line.purchase.packs) {
+      const status = priceStatus(product, today);
+      if (status === 'estimate') out.estimates++;
+      if (status === 'stale') out.stale++;
+      if (onSpecial(product)) {
+        out.specials++;
+        out.specialSaving = round2(out.specialSaving + (product.regularPrice - product.price) * count);
+      }
+    }
   }
   return out;
 }

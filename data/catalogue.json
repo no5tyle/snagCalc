@@ -25,7 +25,8 @@
           "packLabel": "1.5kg (21 sausages)",
           "price": 9.5,
           "url": "https://142.drakes.com.au/lines/slape-sons-traditional-range-bbq-sausages-21-pack-1-5kg",
-          "priceUpdated": "2026-11-15"
+          "priceUpdated": "2026-11-15",
+          "regularPrice": 11
         },
         {
           "id": "ww-sausages-24",
@@ -57,7 +58,8 @@
           "price": 2.8,
           "stockcode": "581172",
           "url": null,
-          "priceUpdated": "2026-11-07"
+          "priceUpdated": "2026-11-07",
+          "packApprox": true
         },
         {
           "id": "dk-bread-white",
@@ -67,7 +69,8 @@
           "packLabel": "loaf (~20 usable slices)",
           "price": 3,
           "url": "https://142.drakes.com.au/lines/drakes-white-sandwich-soft-bread-700g",
-          "priceUpdated": "2026-11-15"
+          "priceUpdated": "2026-11-15",
+          "packApprox": true
         }
       ]
     },
@@ -117,7 +120,7 @@
           "packSize": 500,
           "packLabel": "500ml squeeze bottle",
           "price": 2.2,
-          "stockcode": null,
+          "stockcode": "306969",
           "url": null,
           "priceUpdated": "2026-11-07"
         },
@@ -129,7 +132,8 @@
           "packLabel": "500ml squeeze bottle",
           "price": 2.2,
           "url": "https://142.drakes.com.au/lines/fountain-tomato-sauce-squeeze-500ml",
-          "priceUpdated": "2026-11-15"
+          "priceUpdated": "2026-11-15",
+          "regularPrice": 3.65
         }
       ]
     },
@@ -148,7 +152,7 @@
           "packSize": 500,
           "packLabel": "500ml squeeze bottle",
           "price": 2.2,
-          "stockcode": null,
+          "stockcode": "306971",
           "url": null,
           "priceUpdated": "2026-11-07"
         },
@@ -160,7 +164,8 @@
           "packLabel": "500ml squeeze bottle",
           "price": 2.2,
           "url": "https://142.drakes.com.au/lines/fountain-barbecue-sauce-squeeze-500ml",
-          "priceUpdated": "2026-11-15"
+          "priceUpdated": "2026-11-15",
+          "regularPrice": 3.65
         }
       ]
     },
@@ -179,7 +184,7 @@
           "packSize": 550,
           "packLabel": "550g squeeze bottle",
           "price": 4.8,
-          "stockcode": null,
+          "stockcode": "141604",
           "url": null,
           "priceUpdated": "2026-11-07"
         },
@@ -336,7 +341,8 @@
           "price": 14,
           "stockcode": null,
           "url": null,
-          "priceUpdated": null
+          "priceUpdated": null,
+          "packApprox": true
         },
         {
           "id": "dk-bacon-1kg",
@@ -346,7 +352,8 @@
           "packLabel": "1kg (~20 rashers)",
           "price": 12.5,
           "url": "https://142.drakes.com.au/lines/value-red-gum-smoked-rindless-middle-bacon-rashers-1kg",
-          "priceUpdated": "2026-11-15"
+          "priceUpdated": "2026-11-15",
+          "packApprox": true
         }
       ]
     },
@@ -468,7 +475,7 @@
           "packSize": 24,
           "packLabel": "24 cans",
           "price": 23,
-          "stockcode": null,
+          "stockcode": "14310",
           "url": null,
           "priceUpdated": "2026-11-07"
         },
@@ -480,7 +487,8 @@
           "packLabel": "30 cans",
           "price": 26,
           "url": "https://142.drakes.com.au/lines/pepsi-cola-cans-30-x-375ml",
-          "priceUpdated": "2026-11-15"
+          "priceUpdated": "2026-11-15",
+          "regularPrice": 29.5
         },
         {
           "id": "dk-pepsi-10",
@@ -490,7 +498,8 @@
           "packLabel": "10 cans",
           "price": 10,
           "url": "https://142.drakes.com.au/lines/pepsi-cola-cans-10-x-375ml",
-          "priceUpdated": "2026-11-15"
+          "priceUpdated": "2026-11-15",
+          "regularPrice": 20
         }
       ]
     },
@@ -509,7 +518,7 @@
           "packSize": 24,
           "packLabel": "24 cans",
           "price": 23,
-          "stockcode": null,
+          "stockcode": "54291",
           "url": null,
           "priceUpdated": "2026-11-07"
         },
@@ -521,7 +530,8 @@
           "packLabel": "30 cans",
           "price": 26,
           "url": "https://142.drakes.com.au/lines/pepsi-max-cans-30x375ml",
-          "priceUpdated": "2026-11-15"
+          "priceUpdated": "2026-11-15",
+          "regularPrice": 29.5
         },
         {
           "id": "dk-pepsi-max-10",
@@ -531,7 +541,8 @@
           "packLabel": "10 cans",
           "price": 10,
           "url": "https://142.drakes.com.au/lines/pepsi-max-cans-10x375ml",
-          "priceUpdated": "2026-11-15"
+          "priceUpdated": "2026-11-15",
+          "regularPrice": 20
         }
       ]
     },
@@ -550,7 +561,7 @@
           "packSize": 30,
           "packLabel": "30 cans",
           "price": 26,
-          "stockcode": null,
+          "stockcode": "773142",
           "url": null,
           "priceUpdated": "2026-11-07"
         },
@@ -572,7 +583,8 @@
           "packLabel": "10 cans",
           "price": 10,
           "url": "https://142.drakes.com.au/lines/solo-original-lemon-cans-10x375ml",
-          "priceUpdated": "2026-11-15"
+          "priceUpdated": "2026-11-15",
+          "regularPrice": 20
         }
       ]
     },
@@ -603,7 +615,8 @@
           "packLabel": "24 bottles",
           "price": 13,
           "url": "https://142.drakes.com.au/lines/frantelle-spring-water-24x600ml",
-          "priceUpdated": "2026-11-15"
+          "priceUpdated": "2026-11-15",
+          "regularPrice": 20
         }
       ]
     },
@@ -622,7 +635,7 @@
           "packSize": 24,
           "packLabel": "24 cans",
           "price": 30,
-          "stockcode": null,
+          "stockcode": "42605",
           "url": null,
           "priceUpdated": null
         },
@@ -634,7 +647,8 @@
           "packLabel": "24 cans",
           "price": 27,
           "url": "https://142.drakes.com.au/lines/coca-cola-classic-soft-drink-multipack-cans-24x375ml",
-          "priceUpdated": "2026-11-15"
+          "priceUpdated": "2026-11-15",
+          "regularPrice": 45
         }
       ]
     },
@@ -653,7 +667,7 @@
           "packSize": 24,
           "packLabel": "24 cans",
           "price": 30,
-          "stockcode": null,
+          "stockcode": "669683",
           "url": null,
           "priceUpdated": null
         },
@@ -665,7 +679,8 @@
           "packLabel": "24 cans",
           "price": 27,
           "url": "https://142.drakes.com.au/lines/coca-cola-no-sugar-cans-24x375ml",
-          "priceUpdated": "2026-11-15"
+          "priceUpdated": "2026-11-15",
+          "regularPrice": 45
         },
         {
           "id": "dk-coke-no-sugar-30",
@@ -675,7 +690,8 @@
           "packLabel": "30 cans",
           "price": 32,
           "url": "https://142.drakes.com.au/lines/coca-cola-no-sugar-multipack-cans-30x375ml",
-          "priceUpdated": "2026-11-15"
+          "priceUpdated": "2026-11-15",
+          "regularPrice": 55
         }
       ]
     },
@@ -694,7 +710,7 @@
           "packSize": 24,
           "packLabel": "24 cans",
           "price": 30,
-          "stockcode": null,
+          "stockcode": "370739",
           "url": null,
           "priceUpdated": null
         },
@@ -706,7 +722,8 @@
           "packLabel": "24 cans",
           "price": 23.5,
           "url": "https://142.drakes.com.au/lines/sprite-lemonade-soft-drink-multipack-cans-24x375ml",
-          "priceUpdated": "2026-11-15"
+          "priceUpdated": "2026-11-15",
+          "regularPrice": 45
         }
       ]
     },
@@ -725,7 +742,7 @@
           "packSize": 24,
           "packLabel": "24 cans",
           "price": 30,
-          "stockcode": null,
+          "stockcode": "370743",
           "url": null,
           "priceUpdated": null
         },
@@ -737,7 +754,8 @@
           "packLabel": "24 cans",
           "price": 23.5,
           "url": "https://142.drakes.com.au/lines/fanta-orange-cans-24x375ml",
-          "priceUpdated": "2026-11-15"
+          "priceUpdated": "2026-11-15",
+          "regularPrice": 45
         }
       ]
     }

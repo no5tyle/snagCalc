@@ -6,6 +6,10 @@ import {
   itemsUsage,
   stockLeft,
   carryForward,
+  withPackSizes,
+  priceStatus,
+  priceNotes,
+  onSpecial,
   calculateItems,
   effectiveRecipe,
   effectiveItems,
@@ -92,6 +96,7 @@ function defaultSettings() {
     carry: null, // what the day started with once a restock was bought, { [ingredientId]: base units }; before that it's the first shop
     restockFor: 'next', // 'next' (tomorrow) or 'today' (a top-up for the rest of today)
     topupPct: 50, // rest of today's sales as a % of sales so far
+    packs: {}, // the user's own pack sizes, { [productId]: usable slices in a loaf, rashers in a kilo… }
     ticks: {}, // items ticked off while shopping, { plan|restock: { [productId]: packs } }
     day2Pct: 100,
     menu: SHOP,
@@ -125,6 +130,7 @@ function loadSettings() {
       donated: obj(saved.donated),
       prices: obj(saved.prices),
       ticks: obj(saved.ticks),
+      packs: obj(saved.packs),
       customItems: list(saved.customItems),
       customMenus: list(saved.customMenus),
     };
@@ -199,6 +205,35 @@ function words() {
         title: `Day ${d + 1} restock`,
         after: `After day ${d}`,
       };
+}
+
+// ---------- How far to trust a price ----------
+
+const todayISO = () => new Date().toLocaleDateString('en-CA'); // local date as YYYY-MM-DD
+
+/** A small badge under a cost: on special, an estimate, or checked a long time ago. */
+function priceBadge(product) {
+  if (onSpecial(product)) return `<span class="sub"><span class="badge-special">special</span> usually ${money(product.regularPrice)}</span>`;
+  const status = priceStatus(product, todayISO());
+  if (status === 'estimate') return '<span class="sub"><span class="badge-estimate">estimate</span></span>';
+  if (status === 'stale') return `<span class="sub"><span class="badge-estimate">checked ${esc(fmtDate(product.priceUpdated))}</span></span>`;
+  return '';
+}
+
+/** What to know about the prices behind a list: specials, and prices worth checking. */
+function priceNotesHTML(result) {
+  const n = priceNotes(result, todayISO());
+  const unsure = n.estimates + n.stale;
+  const plural = (k, one, many) => `${k} ${k === 1 ? one : many}`;
+  return `${
+    n.specials
+      ? `<p class="hint price-note"><span class="badge-special">special</span> ${plural(n.specials, 'item is', 'items are')} on special this week. At usual prices this list would cost ${money(n.specialSaving)} more, so allow for that if you’re shopping later.</p>`
+      : ''
+  }${
+    unsure
+      ? `<p class="hint price-note"><span class="badge-estimate">check</span> ${plural(unsure, 'price on this list is an estimate or was', 'prices on this list are estimates or were')} checked over a month ago. <button type="button" class="link" data-open-wizard>Check prices</button></p>`
+      : ''
+  }`;
 }
 
 // ---------- Formatting ----------
@@ -325,9 +360,7 @@ function resultsCard(result, { restock = false, title, counted = {}, shared = ne
         <td class="num" data-label="Cost"><div>${money(l.purchase.cost)}${
           l.purchase.donatedValue > 0
             ? `<span class="sub">donated, worth ${money(l.purchase.donatedValue)}</span>`
-            : l.purchase.packs.some(({ product }) => !product.priceUpdated && !product.overridden && !product.donated && !product.custom)
-              ? '<span class="sub"><span class="badge-estimate">estimate</span></span>'
-              : ''
+            : l.purchase.packs.map(({ product }) => priceBadge(product)).find(Boolean) ?? ''
         }</div></td>
       </tr>`
     )
@@ -343,6 +376,7 @@ function resultsCard(result, { restock = false, title, counted = {}, shared = ne
       </tr></thead>
       <tbody>${rows}</tbody>
     </table></div>
+    ${priceNotesHTML(result)}
     <div class="totals">${statsFor(result, restock)
       .map(([label, value]) => `<div class="stat"><span class="label">${esc(label)}</span><span class="value">${value}</span></div>`)
       .join('')}</div>
@@ -523,7 +557,7 @@ function showStockEstimates(estimates) {
   for (const input of document.querySelectorAll('#restock-inputs [data-stock]')) {
     const ing = catalogue.ingredients[input.dataset.stock];
     const est = (estimates[input.dataset.stock] ?? 0) / (ing?.stockUnit?.size ?? 1);
-    input.placeholder = `${num(est, 1)} (est.)`;
+    input.placeholder = `~${num(est, 1)}`;
   }
 }
 
@@ -561,8 +595,6 @@ function renderRestockResults() {
 
 // ---------- The Shop tab: one list for everything, split by store ----------
 
-const isEstimate = (p) => !p.priceUpdated && !p.overridden && !p.donated && !p.custom;
-
 /** Where to look a product up: its own page, or the Woolworths page for its stockcode. */
 const productUrl = (p) =>
   p.url || (p.store === 'woolworths' && p.stockcode ? `https://www.woolworths.com.au/shop/productdetails/${encodeURIComponent(p.stockcode)}` : null);
@@ -587,7 +619,7 @@ function shopItemRow({ line, product, count, cost }, mode) {
     <span class="cost">${
       product.donated
         ? `<span class="badge-donated">Donated</span>${product.value ? `<span class="sub">worth ${money(product.value * count)}</span>` : ''}`
-        : `${money(cost)}${isEstimate(product) ? '<span class="sub"><span class="badge-estimate">estimate</span></span>' : ''}`
+        : `${money(cost)}${priceBadge(product)}`
     }</span>
   </label></li>`;
 }
@@ -620,6 +652,7 @@ function shopResultsHTML(result, mode, ids) {
         ? `<p class="notice">Not on the price list for ${esc(storeName(settings.store))}: ${esc(missing.map((l) => l.ingredient.name).join(', '))}. They’re left off the total. Change “Shop at” to buy them elsewhere.</p>`
         : ''
     }
+    ${priceNotesHTML(result)}
     <div class="totals">${stats
       .map(([label, value]) => `<div class="stat"><span class="label">${esc(label)}</span><span class="value">${value}</span></div>`)
       .join('')}</div>
@@ -870,7 +903,7 @@ function restockInputsHTML(id, { embedded = false, seen = new Set() } = {}) {
         ${embedded ? '' : day2PctField()}
       </div>
       <p class="summary" data-summary="${esc(id)}"></p>
-      <h3>Stock left over</h3>
+      <h3>Left over</h3>
       ${embedded ? '' : `<p class="hint">${leftoverHint()}${shared.size ? ' Count everything on the stall: what’s shared with another tab is split between them.' : ''}</p>`}
       <div class="stock-grid">${fresh.map((r) => stockField(r.ingredient, catalogue.ingredients[r.ingredient].name)).join('')}</div>
       ${above.length ? `<p class="hint small">${esc(above.join(', '))}: counted above.</p>` : ''}`;
@@ -889,39 +922,39 @@ function restockInputsHTML(id, { embedded = false, seen = new Set() } = {}) {
     <div class="grid-2">${day2PctField()}</div>
     <p class="hint">${leftoverHint()}</p>`
   }
-    <div class="item-grid">${items
-      .map((r) => {
-        const ing = catalogue.ingredients[r.ingredient];
-        const perServe = Number.isFinite(r.perServe);
-        if (r.restock === 'percentLeft') {
-          // Checked by eye: how much of the bottle is left
-          return `<div class="item-row">
-          <span class="item-name">${esc(ing.name)}<span class="sub">Planned: ${num(r.quantity, 0)} ${esc(unitFor(r.quantity, ing.unit))}. An unopened one counts as 100%.</span></span>
-          <label class="span-all">How much of the ${esc(unitFor(1, ing.unit))} is left?
-            <span class="input-suffix"><input type="number" min="0" step="5" inputmode="numeric" data-left-pct="${esc(r.ingredient)}"
-              value="${valueAttr(m.restock.leftPct?.[r.ingredient])}" placeholder="e.g. 40"><span>%</span></span>
-          </label>
+    <div class="count-grid">
+      <div class="count-head" aria-hidden="true"><span></span><span>${cap(did)}</span><span>Left</span></div>
+      ${items
+        .map((r) => {
+          const ing = catalogue.ingredients[r.ingredient];
+          const perServe = Number.isFinite(r.perServe);
+          const unit = ing.stockUnit?.label ?? ing.unit;
+          if (r.restock === 'percentLeft') {
+            // Checked by eye: how much of the bottle is left
+            return `<div class="count-row">
+          <span class="item-name">${esc(ing.name)}<span class="sub">% of the ${esc(unitFor(1, ing.unit))} left (unopened is 100)</span></span>
+          <span class="count-none" aria-hidden="true">–</span>
+          <input type="number" min="0" step="5" inputmode="numeric" data-left-pct="${esc(r.ingredient)}"
+            value="${valueAttr(m.restock.leftPct?.[r.ingredient])}" placeholder="%" aria-label="How much of the ${esc(ing.name)} is left, %">
         </div>`;
-        }
-        seen.add(r.ingredient);
-        return `<div class="item-row">
+          }
+          seen.add(r.ingredient);
+          return `<div class="count-row">
           <span class="item-name">${esc(ing.name)}<span class="sub">${
-            perServe
-              ? `${num(r.perServe, 1)} ${esc(ing.unit)} per ${esc(perServeLabel(r))}`
-              : `Planned: ${num(r.quantity, 0)} ${esc(ing.unit)}`
+            perServe ? `left, in ${esc(unit)}` : `${esc(unit)}, planned ${num(r.quantity, 0)}`
           }</span></span>
           ${
             perServe
-              ? '<span aria-hidden="true"></span>'
-              : `<label>${cap(did)} ${esc(words().soldWhen)}
-            <span class="input-suffix"><input type="number" min="0" step="1" inputmode="numeric" data-sold="${esc(r.ingredient)}"
-              value="${valueAttr(m.restock.sold[r.ingredient])}" placeholder="0"><span>${esc(ing.unit)}</span></span>
-          </label>`
+              ? '<span class="count-none" aria-hidden="true">–</span>'
+              : `<input type="number" min="0" step="1" inputmode="numeric" data-sold="${esc(r.ingredient)}"
+            value="${valueAttr(m.restock.sold[r.ingredient])}" placeholder="0" aria-label="${esc(ing.name)} ${did} ${esc(words().soldWhen)}">`
           }
-          ${stockField(r.ingredient, 'Left over')}
+          <input type="number" min="0" step="${(ing.stockUnit?.size ?? 1) > 1 ? '0.1' : '1'}" inputmode="decimal" data-stock="${esc(r.ingredient)}"
+            value="${valueAttr(settings.stock[r.ingredient])}" placeholder="0" aria-label="${esc(ing.name)} left over, ${esc(unit)}">
         </div>`;
-      })
-      .join('')}</div>`;
+        })
+        .join('')}
+    </div>`;
 }
 
 function renderRestockInputs() {
@@ -937,7 +970,8 @@ const shopOpen = { plan: {}, restock: {} };
 function shopSection(id, mode, body, sub = '') {
   const m = menuDef(id);
   const on = isActive(id);
-  const open = shopOpen[mode][id] ?? (mode === 'restock' || !isItems(id));
+  // To start with: food is open; drinks are too on a restock, where their sales are needed. Consumables wait for a tap
+  const open = shopOpen[mode][id] ?? (!isItems(id) || (mode === 'restock' && Boolean(m.sells)));
   return `<details class="menu-section${on ? '' : ' off'}" data-menu-id="${esc(id)}" data-mode="${mode}" ${on && open ? 'open' : ''}>
     <summary>
       <span class="icon" aria-hidden="true">${esc(m.icon ?? '')}</span>
@@ -960,6 +994,16 @@ function itemsSummary(id) {
   return names.length > 3 ? `${names.slice(0, 3).join(', ')} +${names.length - 3}` : names.join(', ');
 }
 
+/** For a folded-up consumables section on a restock: what's inside, and any bottle nobody has checked. */
+function consumablesNudge(id) {
+  if (!isItems(id) || menuDef(id).sells) return '';
+  const left = ms(id).restock.leftPct || {};
+  const unchecked = effectiveItems(catalogue, id, ms(id).items)
+    .filter((r) => r.enabled && r.restock === 'percentLeft' && !Number.isFinite(left[r.ingredient]))
+    .map((r) => catalogue.ingredients[r.ingredient].name);
+  return unchecked.length ? `Tap to check: ${unchecked.join(', ')}` : 'Tap to count what’s left';
+}
+
 function renderShopInputs() {
   $('#plan-inputs').innerHTML = `<h2>What are you selling?</h2>
     <p class="hint">Switch on what’s on the menu and set how many. The list below adds it all up and splits it by store. Anything two menus share, like bread, is bought once.</p>
@@ -971,10 +1015,12 @@ function renderShopInputs() {
   const ids = activeMenus();
   const seen = new Set();
   $('#restock-inputs').innerHTML = `<h2>${esc(words().title)}</h2>
-    <p class="hint">${restockIntro('what sold')} ${leftoverHint()}</p>
+    <p class="hint">Enter what sold. What’s left is estimated until you type in a count.</p>
     <div class="grid-2">${day2PctField()}</div>
     ${ids.length ? '' : '<p class="hint">Nothing is switched on. Switch on what you’re selling on the Plan view.</p>'}
-    ${ids.map((id) => shopSection(id, 'restock', restockInputsHTML(id, { embedded: true, seen }))).join('')}`;
+    ${ids
+      .map((id) => shopSection(id, 'restock', restockInputsHTML(id, { embedded: true, seen }), consumablesNudge(id)))
+      .join('')}`;
 }
 
 // ---------- Recipe & prices ----------
@@ -1002,7 +1048,13 @@ function renderRecipeTable() {
   const m = ms();
   const menu = menuDef();
   const removeBtn = (r) =>
-    r.custom ? `Added by you <button type="button" class="link danger" data-remove-custom="${esc(r.customId)}">Remove</button>` : esc(r.note ?? '');
+    r.custom
+      ? `Added by you${
+          settings.customItems.some((it) => it.id === r.customId && !it.ingredient)
+            ? ` <button type="button" class="link edit" data-edit-custom="${esc(r.customId)}">Edit</button>`
+            : ''
+        } <button type="button" class="link danger" data-remove-custom="${esc(r.customId)}">Remove</button>`
+      : esc(r.note ?? '');
   if (isItems()) {
     const sells = Boolean(menu.sells);
     $('#recipe-title').textContent = sells ? `Choose ${menu.name.toLowerCase()}` : 'Items';
@@ -1049,7 +1101,7 @@ function renderRecipeTable() {
 // ---------- The user's own items and recipes ----------
 
 function rebuildCatalogue() {
-  catalogue = withCustomItems(withCustomMenus(baseCatalogue, settings.customMenus), settings.customItems);
+  catalogue = withCustomItems(withCustomMenus(withPackSizes(baseCatalogue, settings.packs), settings.customMenus), settings.customItems);
 }
 
 /** Ingredients a recipe could reuse: anything a food menu already uses that this one doesn't. */
@@ -1060,17 +1112,23 @@ function reusableIngredients(id) {
   return [...out];
 }
 
+// The user's own item being edited in the add form, if any
+let editingCustom = null;
+
 function renderCustomForm() {
   const id = settings.menu;
   const menu = menuDef(id);
   const items = isItems(id);
+  // Editing changes what the item is (name, pack, price, store); how much is used is set in the lists above
+  const edit = settings.customItems.find((it) => it.id === editingCustom && it.menu === id && !it.ingredient) ?? null;
+  if (!edit) editingCustom = null;
+  const val = (v) => esc(v ?? '');
   const noun = !items ? 'ingredient' : menu.sells ? menu.name.toLowerCase().replace(/s$/, '') : 'item';
-  const stores = Object.entries(catalogue.stores)
-    .map(([sid, st]) => `<option value="${esc(sid)}">${esc(st.name)}</option>`)
-    .join('');
-  const reuse = items ? [] : reusableIngredients(id);
+  const reuse = items || edit ? [] : reusableIngredients(id);
+  const unitOptions = ['cans', 'bottles', 'poppers'];
+  if (edit && menu.sells && !unitOptions.includes(edit.unit)) unitOptions.push(edit.unit);
   $('#custom-items').innerHTML = `<form class="custom-form" novalidate>
-    <h3>Add ${/^[aeiou]/.test(noun) ? 'an' : 'a'} ${esc(noun)}</h3>
+    <h3>${edit ? `Edit ${esc(edit.name)}` : `Add ${/^[aeiou]/.test(noun) ? 'an' : 'a'} ${esc(noun)}`}</h3>
     <div class="custom-grid">
       ${
         reuse.length
@@ -1085,27 +1143,31 @@ function renderCustomForm() {
       <label class="wide" data-new-only>Name
         <input type="text" name="name" required maxlength="60" placeholder="${
           items ? (menu.sells ? 'e.g. Lift, iced tea, juice boxes' : 'e.g. Foil trays, tongs, ice') : 'e.g. Burger patties, cheese slices, rolls'
-        }" autocomplete="off">
+        }" value="${val(edit?.name)}" autocomplete="off">
       </label>
       <label data-new-only>${menu.sells ? 'Comes in' : 'Counted in'}
         ${
           menu.sells
-            ? '<select name="unit"><option value="cans">Cans</option><option value="bottles">Bottles</option><option value="poppers">Poppers</option></select>'
-            : `<input type="text" name="unit" maxlength="20" list="unit-options" placeholder="e.g. patties, slices, g" autocomplete="off" autocapitalize="none">
+            ? `<select name="unit">${unitOptions.map((u) => `<option value="${esc(u)}" ${edit?.unit === u ? 'selected' : ''}>${esc(cap(u))}</option>`).join('')}</select>`
+            : `<input type="text" name="unit" maxlength="20" list="unit-options" placeholder="e.g. patties, slices, g" value="${val(edit?.unit)}" autocomplete="off" autocapitalize="none">
         <datalist id="unit-options">${['patties', 'rolls', 'buns', 'slices', 'pieces', 'items', 'g', 'ml'].map((u) => `<option value="${u}">`).join('')}</datalist>`
         }
       </label>
       <label data-new-only>How many in a pack
-        <input type="number" name="packSize" min="1" step="1" inputmode="numeric" value="${menu.sells ? 24 : ''}" placeholder="${menu.sells ? '' : 'e.g. 12, or 500 for 500 g'}" required>
+        <input type="number" name="packSize" min="1" step="1" inputmode="numeric" value="${edit ? val(edit.packSize) : menu.sells ? 24 : ''}" placeholder="${menu.sells ? '' : 'e.g. 12, or 500 for 500 g'}" required>
       </label>
       <label data-new-only>Pack price
-        <span class="input-prefix"><span>$</span><input type="number" name="price" min="0" step="0.01" inputmode="decimal" required placeholder="0.00"></span>
+        <span class="input-prefix"><span>$</span><input type="number" name="price" min="0" step="0.01" inputmode="decimal" required placeholder="0.00" value="${val(edit?.price)}"></span>
       </label>
       <label data-new-only>Store
-        <select name="store">${stores}</select>
+        <select name="store">${Object.entries(catalogue.stores)
+          .map(([sid, st]) => `<option value="${esc(sid)}" ${edit?.store === sid ? 'selected' : ''}>${esc(st.name)}</option>`)
+          .join('')}</select>
       </label>
       ${
-        !items
+        edit
+          ? ''
+          : !items
           ? `<label>How much per ${esc(serveNoun(id))}
         <input type="number" name="perServe" min="0" step="any" inputmode="decimal" value="1">
       </label>`
@@ -1122,7 +1184,10 @@ function renderCustomForm() {
       }
     </div>
     <p class="notice" data-custom-error hidden></p>
-    <div class="actions"><button type="submit" class="primary">Add ${esc(noun)}</button></div>
+    <div class="actions">
+      <button type="submit" class="primary">${edit ? 'Save changes' : `Add ${esc(noun)}`}</button>
+      ${edit ? '<button type="button" class="secondary" data-cancel-edit>Cancel</button>' : ''}
+    </div>
   </form>${
     menu.custom
       ? `<div class="actions recipe-admin">
@@ -1155,6 +1220,24 @@ function addCustomItem(form) {
     const el = form.querySelector('[data-custom-error]');
     el.textContent = error;
     el.hidden = false;
+    return;
+  }
+  const editing = settings.customItems.find((it) => it.id === editingCustom && !it.ingredient);
+  if (editing) {
+    // The item keeps its id, so what's planned, sold and counted for it stays
+    Object.assign(editing, {
+      name,
+      unit: String(f.get('unit') || '').trim().toLowerCase() || editing.unit,
+      packSize: Math.round(packSize),
+      price,
+      store: String(f.get('store')),
+    });
+    // A price typed over the old one would hide the new one
+    delete settings.prices[`${editing.id}-pack`];
+    editingCustom = null;
+    save();
+    rebuildCatalogue();
+    renderMenu();
     return;
   }
   const amounts = {
@@ -1224,6 +1307,7 @@ function forgetIngredient(id) {
 /** Take one of the user's own items off its menu (without asking). */
 function dropCustomItem(item) {
   settings.customItems = settings.customItems.filter((it) => it.id !== item.id);
+  if (editingCustom === item.id) editingCustom = null;
   if (item.ingredient) {
     // An ingredient from the price list, reused: only this menu's settings for it go
     const m = settings.menus[item.menu];
@@ -1349,6 +1433,21 @@ async function deleteRecipe(id) {
   renderMenu();
 }
 
+/** A product's pack size on the shared price list, before the user's own count. */
+const basePackSize = (productId) =>
+  Object.values(baseCatalogue.ingredients)
+    .flatMap((i) => i.products)
+    .find((p) => p.id === productId)?.packSize;
+
+/** The user's own prices as `id=price` lines, for whoever keeps the shared price list (scripts/set-prices.mjs reads them). */
+function myPricesText() {
+  const products = new Map(Object.values(baseCatalogue.ingredients).flatMap((i) => i.products.map((p) => [p.id, p])));
+  const lines = Object.entries(settings.prices)
+    .filter(([id, v]) => products.has(id) && Number.isFinite(v))
+    .map(([id, v]) => `${id}=${v.toFixed(2)}  ${products.get(id).name} (${storeName(products.get(id).store)})`);
+  return lines.length ? `Snag Calc prices checked ${todayISO()}\n${lines.join('\n')}` : '';
+}
+
 function renderPriceTable() {
   // The Shop tab lists everything switched on. A menu with a list to choose from (drinks) only lists the ones ticked
   const menus = onShop() ? activeMenus() : [settings.menu];
@@ -1361,11 +1460,24 @@ function renderPriceTable() {
         <td>${esc(p.name)}<span class="sub">${esc(p.packLabel)}</span></td>
         <td>${esc(storeName(p.store))}</td>
         <td class="num">${money(p.price)}<span class="sub">${
-          p.custom ? 'added by you' : p.priceUpdated ? `checked ${esc(p.priceUpdated)}` : '<span class="badge-estimate">estimate</span>'
-        }</span></td>
+          p.custom
+            ? 'added by you'
+            : !p.priceUpdated
+              ? '<span class="badge-estimate">estimate</span>'
+              : `${priceStatus(p, todayISO()) === 'stale' ? '<span class="badge-estimate">old</span> ' : ''}checked ${esc(fmtDate(p.priceUpdated))}`
+        }</span>${
+          Number.isFinite(p.regularPrice) && p.regularPrice > p.price
+            ? `<span class="sub"><span class="badge-special">special</span> usually ${money(p.regularPrice)}</span>`
+            : ''
+        }</td>
         <td class="your-price"><span class="input-prefix"><span>$</span><input type="number" min="0" step="0.01" inputmode="decimal" data-price="${esc(p.id)}"
           value="${valueAttr(override)}" placeholder="${p.price ?? ''}" aria-label="Your price for ${esc(p.name)} at ${esc(storeName(p.store))}"></span>
-          <label class="donated-check"><input type="checkbox" data-donated="${esc(p.id)}" ${settings.donated[p.id] ? 'checked' : ''}>Donated</label></td>
+          <label class="donated-check"><input type="checkbox" data-donated="${esc(p.id)}" ${settings.donated[p.id] ? 'checked' : ''}>Donated</label>${
+            p.packApprox
+              ? `<label class="pack-size">Usable ${esc(catalogue.ingredients[id].unit)} per pack
+            <input type="number" min="1" step="1" inputmode="numeric" data-pack="${esc(p.id)}" value="${valueAttr(settings.packs[p.id])}" placeholder="${basePackSize(p.id) ?? ''}"></label>`
+              : ''
+          }</td>
       </tr>`;
     }
   }
@@ -1375,7 +1487,9 @@ function renderPriceTable() {
   $('#price-info').textContent =
     'Listed prices come from the shared price list in this site. Prices marked "estimate" haven\'t been checked against the store yet. ' +
     'Enter your own price to override one for this browser. Prices are shared across all tabs. ' +
-    'Tick Donated for anything given to the group: it costs nothing on the shopping list, and its price counts as the value of the donation.';
+    'Tick Donated for anything given to the group: it costs nothing on the shopping list, and its price counts as the value of the donation. ' +
+    'For bread and bacon you can also set how many usable slices or rashers you get from a pack.';
+  $('#copy-prices').hidden = !myPricesText();
 }
 
 function renderMenuTabs() {
@@ -1680,7 +1794,11 @@ function renderWizard() {
     const listedNote = product.custom
       ? `Your price <strong>${money(product.price)}</strong>, added by you`
       : product.priceUpdated
-      ? `Listed price <strong>${money(product.price)}</strong>, checked ${esc(fmtDate(product.priceUpdated))}`
+      ? `Listed price <strong>${money(product.price)}</strong>, checked ${esc(fmtDate(product.priceUpdated))}${
+          Number.isFinite(product.regularPrice) && product.regularPrice > product.price
+            ? ` <span class="badge-special">special</span> usually ${money(product.regularPrice)}`
+            : ''
+        }`
       : `Estimate <strong>${money(product.price)}</strong> <span class="badge-estimate">not checked yet</span>`;
     html = `<div class="progress" aria-hidden="true"><span style="width:${Math.round(((wiz.step - 1) / n) * 100)}%"></span></div>
       <p class="step-count">Price ${wiz.step} of ${n} · ${esc(menus.map(menuTag).join(', '))}</p>
@@ -1822,7 +1940,9 @@ function bindWizard() {
     save();
     wiz = null;
   });
-  for (const btn of document.querySelectorAll('[data-open-wizard]')) btn.addEventListener('click', openWizard);
+  document.addEventListener('click', (e) => {
+    if (e.target.closest('[data-open-wizard]')) openWizard();
+  });
   // The keyboard opening or closing changes the visible area
   window.visualViewport?.addEventListener('resize', fitWizard);
   window.visualViewport?.addEventListener('scroll', fitWizard);
@@ -2015,6 +2135,18 @@ function bindInputs() {
   $('#recipe-table').addEventListener('click', (e) => {
     const id = e.target.closest('[data-remove-custom]')?.dataset.removeCustom;
     if (id) removeCustomItem(id);
+    const editId = e.target.closest('[data-edit-custom]')?.dataset.editCustom;
+    if (editId) {
+      editingCustom = editId;
+      renderCustomForm();
+      $('#custom-items form').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      $('#custom-items [name=name]').focus({ preventScroll: true });
+    }
+  });
+  $('#custom-items').addEventListener('click', (e) => {
+    if (!e.target.closest('[data-cancel-edit]')) return;
+    editingCustom = null;
+    renderCustomForm();
   });
   $('#plan-inputs').addEventListener('click', (e) => {
     const id = e.target.closest('[data-goto-choose]')?.dataset.gotoChoose;
@@ -2052,11 +2184,27 @@ function bindInputs() {
       changed();
       return;
     }
+    const packId = e.target.dataset.pack;
+    if (packId) {
+      const size = toNumber(e.target.value);
+      if (size >= 1) settings.packs[packId] = Math.round(size);
+      else delete settings.packs[packId];
+      save();
+      rebuildCatalogue();
+      // Everything but this table, so the field keeps its focus
+      if (!onShop()) {
+        renderPlanInputs();
+        renderRestockInputs();
+      }
+      renderResults();
+      return;
+    }
     const id = e.target.dataset.price;
     if (!id) return;
     const v = toNumber(e.target.value);
     if (v == null || v < 0) delete settings.prices[id];
     else settings.prices[id] = v;
+    $('#copy-prices').hidden = !myPricesText();
     changed();
   });
 
@@ -2068,6 +2216,12 @@ function bindInputs() {
   });
 
   $('#new-event').addEventListener('click', newEvent);
+  $('#copy-prices').addEventListener('click', async (e) => {
+    const btn = e.currentTarget;
+    const label = btn.textContent;
+    btn.textContent = (await copyText(myPricesText())) ? 'Copied!' : "Couldn't copy";
+    setTimeout(() => (btn.textContent = label), 2000);
+  });
   for (const btn of document.querySelectorAll('[data-share-plan]')) btn.addEventListener('click', () => sharePlan(btn));
 
   $('#reset').addEventListener('click', async () => {

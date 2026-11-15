@@ -6,10 +6,15 @@
   "type": "module",
   "scripts": {
     "test": "node --test tests/*.test.mjs",
+    "test:e2e": "node --test tests/e2e/*.e2e.cjs",
     "start": "python3 -m http.server 8000",
-    "update-prices": "node scripts/update-prices.mjs"
+    "update-prices": "node scripts/update-prices.mjs",
+    "set-prices": "node scripts/set-prices.mjs"
   },
   "engines": {
     "node": ">=20"
+  },
+  "devDependencies": {
+    "playwright": "1.63.0"
   }
 }

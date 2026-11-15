@@ -2,7 +2,7 @@
 
 ## Workflow
 - When work is finished and tests pass, merge it into `main` and push `main`. GitHub Pages deploys from `main`, so the change goes live straight away. Do this without asking.
-- Run `npm test` before merging.
+- Run `npm test` before merging, and `npm run test:e2e` after UI changes (browser tests in `tests/e2e/`; CI runs both).
 - Check UI changes at phone width (~390px) as well as desktop. Most users will open this on a phone at the BBQ.
 
 ## Project
@@ -12,3 +12,4 @@
 - Anything added to the saved settings that belongs to a plan also needs adding to `SHAPE` in `assets/share.js`, or shared links won't carry it.
 - Products, prices and recipes live in `data/catalogue.json`. Each entry under `menu` is a tab in the UI, so new menu items should be added as data there.
 - Prices without `priceUpdated` are placeholder estimates. Don't present them as real prices.
+- Woolworths blocks lookups from GitHub's servers and from Claude's cloud sessions, so only Drakes prices refresh automatically. Don't hard-code listed prices in tests; read them from the catalogue.

@@ -74,7 +74,10 @@
       <div class="card">
         <h2>Prices</h2>
         <p class="hint" id="price-info"></p>
-        <p><button class="primary" data-open-wizard>Check prices step by step</button></p>
+        <div class="actions price-actions">
+          <button class="primary" data-open-wizard>Check prices step by step</button>
+          <button class="secondary" id="copy-prices" hidden title="Copies the prices you've entered, to send to whoever keeps the shared price list">Copy my prices</button>
+        </div>
         <div class="table-scroll"><table id="price-table" class="data stack"></table></div>
       </div>
       <div class="card">
