@@ -20,10 +20,10 @@
         "name": "Woolworths White Soft Sandwich Bread 650g",
         "packSize": 20,
         "packLabel": "loaf (~20 usable slices)",
-        "price": 2.8,
+        "price": 3,
         "stockcode": "581172",
         "url": null,
-        "priceUpdated": "2026-11-07",
+        "priceUpdated": "2026-11-16",
         "packApprox": true
       }
     ],
@@ -36,7 +36,7 @@
         "price": 5.5,
         "stockcode": "144427",
         "url": null,
-        "priceUpdated": "2026-11-07"
+        "priceUpdated": "2026-11-16"
       },
       {
         "id": "ww-onions-1kg",
@@ -46,7 +46,7 @@
         "price": 4,
         "stockcode": "144336",
         "url": null,
-        "priceUpdated": null
+        "priceUpdated": "2026-11-16"
       }
     ],
     "tomato-sauce": [
@@ -58,7 +58,7 @@
         "price": 2.2,
         "stockcode": "306969",
         "url": null,
-        "priceUpdated": "2026-11-07"
+        "priceUpdated": "2026-11-16"
       },
       {
         "id": "ww-fountain-tomato-2l",
@@ -68,17 +68,18 @@
         "price": 6,
         "stockcode": "175901",
         "url": null,
-        "priceUpdated": null
+        "priceUpdated": "2026-11-16"
       },
       {
         "id": "ww-masterfoods-tomato-500",
         "name": "MasterFoods Tomato Sauce 500mL",
         "packSize": 500,
         "packLabel": "500ml squeeze bottle",
-        "price": 3.5,
+        "price": 3.25,
         "stockcode": "99633",
         "url": null,
-        "priceUpdated": null
+        "priceUpdated": "2026-11-16",
+        "regularPrice": 4.2
       },
       {
         "id": "ww-masterfoods-tomato-920",
@@ -105,10 +106,10 @@
         "name": "Rosella Tomato Sauce Squeezie 500mL",
         "packSize": 500,
         "packLabel": "500ml squeeze bottle",
-        "price": 3.25,
+        "price": 3.95,
         "stockcode": "207915",
         "url": null,
-        "priceUpdated": null
+        "priceUpdated": "2026-11-16"
       },
       {
         "id": "ww-ozesauce-tomato-500",
@@ -130,7 +131,7 @@
         "price": 2.2,
         "stockcode": "306971",
         "url": null,
-        "priceUpdated": "2026-11-07"
+        "priceUpdated": "2026-11-16"
       },
       {
         "id": "ww-fountain-bbq-2l",
@@ -140,17 +141,18 @@
         "price": 6,
         "stockcode": "845672",
         "url": null,
-        "priceUpdated": null
+        "priceUpdated": "2026-11-16"
       },
       {
         "id": "ww-masterfoods-bbq-500",
         "name": "MasterFoods Barbecue Sauce 500mL",
         "packSize": 500,
         "packLabel": "500ml squeeze bottle",
-        "price": 3.5,
+        "price": 3.25,
         "stockcode": "99696",
         "url": null,
-        "priceUpdated": null
+        "priceUpdated": "2026-11-16",
+        "regularPrice": 4.2
       },
       {
         "id": "ww-masterfoods-bbq-920",
@@ -182,17 +184,18 @@
         "price": 4.8,
         "stockcode": "141604",
         "url": null,
-        "priceUpdated": "2026-11-07"
+        "priceUpdated": "2026-11-16",
+        "regularPrice": 5.8
       },
       {
         "id": "ww-masterfoods-mustard-250",
         "name": "MasterFoods Mild American Mustard 250g",
         "packSize": 250,
         "packLabel": "250g squeeze bottle",
-        "price": 3.5,
+        "price": 4.2,
         "stockcode": "36557",
         "url": null,
-        "priceUpdated": null
+        "priceUpdated": "2026-11-16"
       }
     ],
     "oil": [
@@ -215,7 +218,7 @@
         "price": 4,
         "stockcode": "750736",
         "url": null,
-        "priceUpdated": null,
+        "priceUpdated": "2026-11-16",
         "contents": 750
       },
       {
@@ -226,7 +229,7 @@
         "price": 6,
         "stockcode": "750739",
         "url": null,
-        "priceUpdated": null,
+        "priceUpdated": "2026-11-16",
         "contents": 2000
       },
       {
@@ -237,7 +240,7 @@
         "price": 11.9,
         "stockcode": "62062",
         "url": null,
-        "priceUpdated": null,
+        "priceUpdated": "2026-11-16",
         "contents": 4000
       }
     ],
@@ -281,10 +284,10 @@
         "name": "Cage-free eggs 12 pack 700g",
         "packSize": 12,
         "packLabel": "dozen",
-        "price": 6.5,
+        "price": 5.7,
         "stockcode": "165367",
         "url": null,
-        "priceUpdated": null
+        "priceUpdated": "2026-11-16"
       }
     ],
     "bacon": [
@@ -293,10 +296,10 @@
         "name": "Middle bacon rashers 1kg",
         "packSize": 20,
         "packLabel": "1kg (~20 rashers)",
-        "price": 14,
+        "price": 11,
         "stockcode": "48358",
         "url": null,
-        "priceUpdated": null,
+        "priceUpdated": "2026-11-16",
         "packApprox": true
       }
     ],
@@ -377,7 +380,8 @@
         "price": 23,
         "stockcode": "54291",
         "url": null,
-        "priceUpdated": "2026-11-07"
+        "priceUpdated": "2026-11-16",
+        "regularPrice": 39.5
       },
       {
         "id": "ww-pepsi-max-30",
@@ -387,7 +391,7 @@
         "price": 29.5,
         "stockcode": "773129",
         "url": null,
-        "priceUpdated": null
+        "priceUpdated": "2026-11-16"
       },
       {
         "id": "ww-pepsi-max-10",
@@ -397,7 +401,7 @@
         "price": 20,
         "stockcode": "442190",
         "url": null,
-        "priceUpdated": null
+        "priceUpdated": "2026-11-16"
       }
     ],
     "solo": [
@@ -429,7 +433,7 @@
         "price": 20,
         "stockcode": "442191",
         "url": null,
-        "priceUpdated": null
+        "priceUpdated": "2026-11-16"
       }
     ],
     "water": [
@@ -450,10 +454,10 @@
         "name": "Coca-Cola 24 pack",
         "packSize": 24,
         "packLabel": "24 cans",
-        "price": 30,
+        "price": 45,
         "stockcode": "42605",
         "url": null,
-        "priceUpdated": null
+        "priceUpdated": "2026-11-16"
       },
       {
         "id": "ww-coca-cola-30",
@@ -463,17 +467,18 @@
         "price": 32,
         "stockcode": "84552",
         "url": null,
-        "priceUpdated": null
+        "priceUpdated": "2026-11-16"
       },
       {
         "id": "ww-coca-cola-10",
         "name": "Coca-Cola Classic Cans 375mL x 10 pack",
         "packSize": 10,
         "packLabel": "10 cans",
-        "price": 21,
+        "price": 11.5,
         "stockcode": "793315",
         "url": null,
-        "priceUpdated": null
+        "priceUpdated": "2026-11-16",
+        "regularPrice": 23
       }
     ],
     "coke-no-sugar": [
@@ -495,17 +500,18 @@
         "price": 32,
         "stockcode": "679121",
         "url": null,
-        "priceUpdated": null
+        "priceUpdated": "2026-11-16"
       },
       {
         "id": "ww-coke-no-sugar-10",
         "name": "Coca-Cola Zero Sugar Cans 375mL x 10 pack",
         "packSize": 10,
         "packLabel": "10 cans",
-        "price": 21,
+        "price": 11.5,
         "stockcode": "669379",
         "url": null,
-        "priceUpdated": null
+        "priceUpdated": "2026-11-16",
+        "regularPrice": 23
       }
     ],
     "sprite": [
@@ -534,10 +540,11 @@
         "name": "Sprite Lemonade Cans 375mL x 10 pack",
         "packSize": 10,
         "packLabel": "10 cans",
-        "price": 21,
+        "price": 11.5,
         "stockcode": "793285",
         "url": null,
-        "priceUpdated": null
+        "priceUpdated": "2026-11-16",
+        "regularPrice": 23
       }
     ],
     "fanta": [
@@ -556,10 +563,11 @@
         "name": "Fanta Orange Cans 375mL x 10 pack",
         "packSize": 10,
         "packLabel": "10 cans",
-        "price": 21,
+        "price": 11.5,
         "stockcode": "793311",
         "url": null,
-        "priceUpdated": null
+        "priceUpdated": "2026-11-16",
+        "regularPrice": 23
       }
     ]
   }
