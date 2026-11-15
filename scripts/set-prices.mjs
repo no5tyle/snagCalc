@@ -8,9 +8,9 @@
 // ignored, so the text from "Copy my prices" on the site can be pasted in as
 // it is. Sets the price, marks it checked today and clears any special.
 
-import { readFile, writeFile } from 'node:fs/promises';
+import { readFile } from 'node:fs/promises';
+import { storeIds, readStoreFile, writeStoreFile } from './catalogue-files.mjs';
 
-const FILE = new URL('../data/catalogue.json', import.meta.url);
 const today = new Date().toISOString().slice(0, 10);
 
 /** `id=price` pairs from lines or arguments; other text is skipped. */
@@ -28,22 +28,23 @@ async function main() {
     console.error('No prices given. Usage: node scripts/set-prices.mjs product-id=price ...');
     process.exit(1);
   }
-  const catalogue = JSON.parse(await readFile(FILE, 'utf8'));
-  const products = new Map(Object.values(catalogue.ingredients).flatMap((i) => i.products.map((p) => [p.id, p])));
+  const files = storeIds().map((store) => ({ store, file: readStoreFile(store), touched: false }));
   let unknown = 0;
   for (const [id, price] of Object.entries(prices)) {
-    const p = products.get(id);
-    if (!p) {
+    const home = files.find((f) => Object.values(f.file.products).flat().some((p) => p.id === id));
+    if (!home) {
       console.warn(`Unknown product: ${id}`);
       unknown++;
       continue;
     }
+    const p = Object.values(home.file.products).flat().find((x) => x.id === id);
     console.log(`${id}: ${p.price} -> ${price}`);
     p.price = Math.round(price * 100) / 100;
     p.priceUpdated = today;
     delete p.regularPrice;
+    home.touched = true;
   }
-  await writeFile(FILE, JSON.stringify(catalogue, null, 2) + '\n');
+  for (const f of files) if (f.touched) writeStoreFile(f.store, f.file);
   if (unknown) process.exit(1);
 }
 

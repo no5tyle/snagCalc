@@ -1,0 +1,574 @@
+{
+  "store": "drakes",
+  "name": "Drakes",
+  "products": {
+    "sausages": [
+      {
+        "id": "dk-slapes-bbq-1.5kg",
+        "name": "Slape & Sons Traditional BBQ Sausages 21 pack 1.5kg",
+        "packSize": 21,
+        "packLabel": "1.5kg (21 sausages)",
+        "price": 9.5,
+        "url": "https://142.drakes.com.au/lines/slape-sons-traditional-range-bbq-sausages-21-pack-1-5kg",
+        "priceUpdated": "2026-11-15",
+        "regularPrice": 11
+      }
+    ],
+    "bread": [
+      {
+        "id": "dk-bread-white",
+        "name": "Drakes White Sandwich Soft Sliced Bread 700g",
+        "packSize": 20,
+        "packLabel": "loaf (~20 usable slices)",
+        "price": 3,
+        "url": "https://142.drakes.com.au/lines/drakes-white-sandwich-soft-bread-700g",
+        "priceUpdated": "2026-11-15",
+        "packApprox": true
+      }
+    ],
+    "onions": [
+      {
+        "id": "dk-onions-1kg",
+        "name": "Brown Onions 1kg",
+        "packSize": 1000,
+        "packLabel": "1kg bag",
+        "price": 3.5,
+        "url": "https://142.drakes.com.au/lines/brown-onions-1kg",
+        "priceUpdated": "2026-11-15"
+      }
+    ],
+    "tomato-sauce": [
+      {
+        "id": "dk-fountain-tomato-500",
+        "name": "Fountain Tomato Sauce Squeeze 500mL",
+        "packSize": 500,
+        "packLabel": "500ml squeeze bottle",
+        "price": 2.2,
+        "url": "https://142.drakes.com.au/lines/fountain-tomato-sauce-squeeze-500ml",
+        "priceUpdated": "2026-11-15",
+        "regularPrice": 3.65
+      },
+      {
+        "id": "dk-fountain-tomato-2l",
+        "name": "Fountain Tomato Sauce 2L",
+        "packSize": 2000,
+        "packLabel": "2L bottle",
+        "price": 6,
+        "url": "https://142.drakes.com.au/lines/fountain-tomato-sauce-2l",
+        "priceUpdated": "2026-11-15",
+        "regularPrice": 8
+      },
+      {
+        "id": "dk-masterfoods-tomato-500",
+        "name": "Masterfoods Tomato Sauce Squeeze 500mL",
+        "packSize": 500,
+        "packLabel": "500ml squeeze bottle",
+        "price": 3.5,
+        "url": "https://142.drakes.com.au/lines/masterfoods-tomato-sauce-squeeze-500ml",
+        "priceUpdated": "2026-11-15"
+      },
+      {
+        "id": "dk-masterfoods-tomato-920",
+        "name": "Masterfoods Tomato Sauce Squeeze 920mL",
+        "packSize": 920,
+        "packLabel": "920ml squeeze bottle",
+        "price": 5.4,
+        "url": "https://142.drakes.com.au/lines/masterfoods-tomato-sauce-squeeze-920ml",
+        "priceUpdated": "2026-11-15",
+        "regularPrice": 6.5
+      },
+      {
+        "id": "dk-rosella-tomato-500",
+        "name": "Rosella Tomato Sauce Squeezy 500mL",
+        "packSize": 500,
+        "packLabel": "500ml squeeze bottle",
+        "price": 5.35,
+        "url": "https://142.drakes.com.au/lines/rosella-tomato-sauce-squeezy-500ml",
+        "priceUpdated": "2026-11-15"
+      }
+    ],
+    "bbq-sauce": [
+      {
+        "id": "dk-fountain-bbq-500",
+        "name": "Fountain Barbecue Sauce Squeeze 500mL",
+        "packSize": 500,
+        "packLabel": "500ml squeeze bottle",
+        "price": 2.2,
+        "url": "https://142.drakes.com.au/lines/fountain-barbecue-sauce-squeeze-500ml",
+        "priceUpdated": "2026-11-15",
+        "regularPrice": 3.65
+      },
+      {
+        "id": "dk-fountain-bbq-2l",
+        "name": "Fountain Barbecue Sauce 2L",
+        "packSize": 2000,
+        "packLabel": "2L bottle",
+        "price": 6,
+        "url": "https://142.drakes.com.au/lines/fountain-barbecue-sauce-2l",
+        "priceUpdated": "2026-11-15",
+        "regularPrice": 8
+      },
+      {
+        "id": "dk-masterfoods-bbq-500",
+        "name": "Masterfoods Barbecue Sauce Squeeze 500mL",
+        "packSize": 500,
+        "packLabel": "500ml squeeze bottle",
+        "price": 3.5,
+        "url": "https://142.drakes.com.au/lines/masterfoods-barbecue-sauce-squeeze-500ml",
+        "priceUpdated": "2026-11-15"
+      },
+      {
+        "id": "dk-masterfoods-bbq-920",
+        "name": "Masterfoods Barbecue Sauce Squeeze 920mL",
+        "packSize": 920,
+        "packLabel": "920ml squeeze bottle",
+        "price": 5.4,
+        "url": "https://142.drakes.com.au/lines/masterfoods-barbecue-sauce-squeeze-920ml",
+        "priceUpdated": "2026-11-15",
+        "regularPrice": 6.5
+      }
+    ],
+    "mustard": [
+      {
+        "id": "dk-masterfoods-mustard-550",
+        "name": "Masterfoods American Mild Mustard Squeeze 550g",
+        "packSize": 550,
+        "packLabel": "550g squeeze bottle",
+        "price": 5.45,
+        "url": "https://142.drakes.com.au/lines/masterfoods-american-mild-mustard-squeeze-550g",
+        "priceUpdated": "2026-11-15"
+      },
+      {
+        "id": "dk-masterfoods-mustard-250",
+        "name": "Masterfoods American Mild Mustard Squeeze 250g",
+        "packSize": 250,
+        "packLabel": "250g squeeze bottle",
+        "price": 3.5,
+        "url": "https://142.drakes.com.au/lines/masterfoods-american-mild-mustard-squeeze-250g",
+        "priceUpdated": "2026-11-15"
+      }
+    ],
+    "oil": [
+      {
+        "id": "dk-sunflower-oil-750",
+        "name": "Value Sunflower Oil 750mL",
+        "packSize": 1,
+        "packLabel": "750ml bottle",
+        "price": 4,
+        "url": "https://142.drakes.com.au/lines/value-sunflower-oil-750ml",
+        "priceUpdated": "2026-11-15",
+        "contents": 750
+      },
+      {
+        "id": "dk-canola-oil-750",
+        "name": "Value Canola Oil 750mL",
+        "packSize": 1,
+        "packLabel": "750ml bottle",
+        "price": 4,
+        "url": "https://142.drakes.com.au/lines/value-australian-canola-oil-750ml",
+        "priceUpdated": "2026-11-15",
+        "contents": 750
+      },
+      {
+        "id": "dk-canola-oil-2l",
+        "name": "Value Canola Oil 2L",
+        "packSize": 1,
+        "packLabel": "2L bottle",
+        "price": 6,
+        "url": "https://142.drakes.com.au/lines/value-canola-oil-2l",
+        "priceUpdated": "2026-11-15",
+        "contents": 2000
+      },
+      {
+        "id": "dk-canola-oil-4l",
+        "name": "Value Canola Oil 4L",
+        "packSize": 1,
+        "packLabel": "4L bottle",
+        "price": 11.9,
+        "url": "https://142.drakes.com.au/lines/value-canola-oil-4l",
+        "priceUpdated": "2026-11-15",
+        "contents": 4000
+      },
+      {
+        "id": "dk-sunflower-oil-2l",
+        "name": "Value Sunflower Oil 2L",
+        "packSize": 1,
+        "packLabel": "2L bottle",
+        "price": 10,
+        "url": "https://142.drakes.com.au/lines/value-sunflower-oil-2l",
+        "priceUpdated": "2026-11-15",
+        "contents": 2000
+      }
+    ],
+    "napkins": [
+      {
+        "id": "dk-napkins-100",
+        "name": "Value White Napkins 1 Ply 100 Pack",
+        "packSize": 100,
+        "packLabel": "100 pack",
+        "price": 0.95,
+        "url": "https://142.drakes.com.au/lines/value-white-napkins-1-ply-100-pack",
+        "priceUpdated": "2026-11-15"
+      },
+      {
+        "id": "dk-napkins-deeko-200",
+        "name": "Deeko White Napkins 1 Ply 200 Pack",
+        "packSize": 200,
+        "packLabel": "200 pack",
+        "price": 2.95,
+        "url": "https://142.drakes.com.au/lines/deeko-white-napkins-1-ply-200-pack",
+        "priceUpdated": "2026-11-15"
+      },
+      {
+        "id": "dk-napkins-deeko-80",
+        "name": "Deeko White Napkins 1 Ply 80 Pack",
+        "packSize": 80,
+        "packLabel": "80 pack",
+        "price": 1.5,
+        "url": "https://142.drakes.com.au/lines/deeko-white-napkins-1-ply-80-pack",
+        "priceUpdated": "2026-11-15"
+      }
+    ],
+    "gloves": [
+      {
+        "id": "dk-gloves-100",
+        "name": "Value Gloves Disposable Medium 100 Pack",
+        "packSize": 100,
+        "packLabel": "100 pack",
+        "price": 8.25,
+        "url": "https://142.drakes.com.au/lines/value-gloves-disposable-medium-100-pack",
+        "priceUpdated": "2026-11-15"
+      }
+    ],
+    "eggs": [
+      {
+        "id": "dk-eggs-12",
+        "name": "Farmside Cage Free Eggs 12 Pack 700g",
+        "packSize": 12,
+        "packLabel": "dozen",
+        "price": 5.7,
+        "url": "https://142.drakes.com.au/lines/farmside-cage-free-eggs-12-pack-700g",
+        "priceUpdated": "2026-11-15"
+      },
+      {
+        "id": "dk-eggs-value-12",
+        "name": "Value Large Cage Eggs 12 Pack 600g",
+        "packSize": 12,
+        "packLabel": "dozen",
+        "price": 5.5,
+        "url": "https://142.drakes.com.au/lines/value-large-cage-eggs-12-pack-600g",
+        "priceUpdated": "2026-11-15"
+      },
+      {
+        "id": "dk-eggs-medium-12",
+        "name": "Country Fresh Barn Laid Medium Eggs 12 Pack 500g",
+        "packSize": 12,
+        "packLabel": "dozen (medium eggs)",
+        "price": 3.5,
+        "url": "https://142.drakes.com.au/lines/country-fresh-barn-laid-farm-fresh-medium-eggs-12-pack-500g",
+        "priceUpdated": "2026-11-15"
+      }
+    ],
+    "bacon": [
+      {
+        "id": "dk-bacon-1kg",
+        "name": "Value Naturally Wood Smoked Bacon Rashers 1kg",
+        "packSize": 20,
+        "packLabel": "1kg (~20 rashers)",
+        "price": 12.5,
+        "url": "https://142.drakes.com.au/lines/value-red-gum-smoked-rindless-middle-bacon-rashers-1kg",
+        "priceUpdated": "2026-11-15",
+        "packApprox": true
+      },
+      {
+        "id": "dk-bacon-cobber-1kg",
+        "name": "Cobber Breakfast Bacon 1kg",
+        "packSize": 20,
+        "packLabel": "1kg (~20 rashers)",
+        "price": 10.3,
+        "url": "https://142.drakes.com.au/lines/cobber-breakfast-bacon-1kg",
+        "priceUpdated": "2026-11-15",
+        "packApprox": true
+      },
+      {
+        "id": "dk-bacon-huttons-1kg",
+        "name": "Huttons Smoked Short Cut Rindless Bacon 1kg",
+        "packSize": 20,
+        "packLabel": "1kg (~20 rashers)",
+        "price": 14,
+        "url": "https://142.drakes.com.au/lines/huttons-smoked-short-cut-bacon-rindless-1kg",
+        "priceUpdated": "2026-11-15",
+        "packApprox": true,
+        "regularPrice": 18.9
+      },
+      {
+        "id": "dk-bacon-value-400",
+        "name": "Value Naturally Wood Smoked Middle Bacon Rashers 400g",
+        "packSize": 8,
+        "packLabel": "400g (~8 rashers)",
+        "price": 7.2,
+        "url": "https://142.drakes.com.au/lines/value-red-gum-smoked-rindless-middle-bacon-rashers-400g",
+        "priceUpdated": "2026-11-15",
+        "packApprox": true
+      }
+    ],
+    "paper-towels": [
+      {
+        "id": "dk-paper-towels-2",
+        "name": "Value Paper Towel 2 Pack",
+        "packSize": 2,
+        "packLabel": "2 rolls",
+        "price": 2.2,
+        "url": "https://142.drakes.com.au/lines/value-paper-towel-2-pack",
+        "priceUpdated": "2026-11-15"
+      },
+      {
+        "id": "dk-paper-towels-4",
+        "name": "Value Paper Towel 4 Pack",
+        "packSize": 4,
+        "packLabel": "4 rolls",
+        "price": 4,
+        "url": "https://142.drakes.com.au/lines/value-paper-towel-4-pack",
+        "priceUpdated": "2026-11-15"
+      }
+    ],
+    "garbage-bags": [
+      {
+        "id": "dk-garbage-bags-20",
+        "name": "Value Garbage Bags 20 Pack",
+        "packSize": 20,
+        "packLabel": "20 bags",
+        "price": 2.8,
+        "url": "https://142.drakes.com.au/lines/value-garbage-bags-20-pack",
+        "priceUpdated": "2026-11-15"
+      }
+    ],
+    "dish-liquid": [
+      {
+        "id": "dk-dish-liquid-1l",
+        "name": "Value Lemon Dishwashing Liquid 1L",
+        "packSize": 1,
+        "packLabel": "1L bottle",
+        "price": 1.4,
+        "url": "https://142.drakes.com.au/lines/value-lemon-dishwashing-liquid-1l",
+        "priceUpdated": "2026-11-15"
+      }
+    ],
+    "pepsi": [
+      {
+        "id": "dk-pepsi-30",
+        "name": "Pepsi Cola Cans 30 x 375mL",
+        "packSize": 30,
+        "packLabel": "30 cans",
+        "price": 26,
+        "url": "https://142.drakes.com.au/lines/pepsi-cola-cans-30-x-375ml",
+        "priceUpdated": "2026-11-15",
+        "regularPrice": 29.5
+      },
+      {
+        "id": "dk-pepsi-10",
+        "name": "Pepsi Cola Cans 10 x 375mL",
+        "packSize": 10,
+        "packLabel": "10 cans",
+        "price": 10,
+        "url": "https://142.drakes.com.au/lines/pepsi-cola-cans-10-x-375ml",
+        "priceUpdated": "2026-11-15",
+        "regularPrice": 20
+      },
+      {
+        "id": "dk-pepsi-24",
+        "name": "Pepsi Cola Cans 24 x 375mL",
+        "packSize": 24,
+        "packLabel": "24 cans",
+        "price": 39.5,
+        "url": "https://142.drakes.com.au/lines/pepsi-cola-cans-24-x-375ml",
+        "priceUpdated": "2026-11-15"
+      }
+    ],
+    "pepsi-max": [
+      {
+        "id": "dk-pepsi-max-30",
+        "name": "Pepsi Max Cans 30 x 375mL",
+        "packSize": 30,
+        "packLabel": "30 cans",
+        "price": 26,
+        "url": "https://142.drakes.com.au/lines/pepsi-max-cans-30x375ml",
+        "priceUpdated": "2026-11-15",
+        "regularPrice": 29.5
+      },
+      {
+        "id": "dk-pepsi-max-10",
+        "name": "Pepsi Max Cans 10 x 375mL",
+        "packSize": 10,
+        "packLabel": "10 cans",
+        "price": 10,
+        "url": "https://142.drakes.com.au/lines/pepsi-max-cans-10x375ml",
+        "priceUpdated": "2026-11-15",
+        "regularPrice": 20
+      },
+      {
+        "id": "dk-pepsi-max-24",
+        "name": "Pepsi Max Cans 24 x 375mL",
+        "packSize": 24,
+        "packLabel": "24 cans",
+        "price": 39.5,
+        "url": "https://142.drakes.com.au/lines/pepsi-max-cans-24x375ml",
+        "priceUpdated": "2026-11-15"
+      }
+    ],
+    "solo": [
+      {
+        "id": "dk-solo-30",
+        "name": "Solo Original Lemon Cans 30 x 375mL",
+        "packSize": 30,
+        "packLabel": "30 cans",
+        "price": 26,
+        "url": "https://142.drakes.com.au/lines/solo-original-lemon-cans-30x375ml",
+        "priceUpdated": "2026-11-15"
+      },
+      {
+        "id": "dk-solo-10",
+        "name": "Solo Original Lemon Cans 10 x 375mL",
+        "packSize": 10,
+        "packLabel": "10 cans",
+        "price": 10,
+        "url": "https://142.drakes.com.au/lines/solo-original-lemon-cans-10x375ml",
+        "priceUpdated": "2026-11-15",
+        "regularPrice": 20
+      },
+      {
+        "id": "dk-solo-24",
+        "name": "Solo Original Lemon Cans 24 x 375mL",
+        "packSize": 24,
+        "packLabel": "24 cans",
+        "price": 39.5,
+        "url": "https://142.drakes.com.au/lines/solo-original-lemon-cans-24x375ml",
+        "priceUpdated": "2026-11-15"
+      }
+    ],
+    "water": [
+      {
+        "id": "dk-water-24",
+        "name": "Frantelle Spring Water 24 x 600mL",
+        "packSize": 24,
+        "packLabel": "24 bottles",
+        "price": 13,
+        "url": "https://142.drakes.com.au/lines/frantelle-spring-water-24x600ml",
+        "priceUpdated": "2026-11-15",
+        "regularPrice": 20
+      },
+      {
+        "id": "dk-water-good-stuff-24",
+        "name": "The Good Stuff Aussie Spring Water 24 x 600mL",
+        "packSize": 24,
+        "packLabel": "24 bottles",
+        "price": 9.4,
+        "url": "https://142.drakes.com.au/lines/the-good-stuff-aussie-spring-water-24x600ml",
+        "priceUpdated": "2026-11-15"
+      },
+      {
+        "id": "dk-water-12",
+        "name": "Frantelle Spring Water 12 x 600mL",
+        "packSize": 12,
+        "packLabel": "12 bottles",
+        "price": 10,
+        "url": "https://142.drakes.com.au/lines/frantelle-spring-water-12x600ml",
+        "priceUpdated": "2026-11-15"
+      }
+    ],
+    "coca-cola": [
+      {
+        "id": "dk-coca-cola-24",
+        "name": "Coca Cola Classic Cans 24 x 375mL",
+        "packSize": 24,
+        "packLabel": "24 cans",
+        "price": 27,
+        "url": "https://142.drakes.com.au/lines/coca-cola-classic-soft-drink-multipack-cans-24x375ml",
+        "priceUpdated": "2026-11-15",
+        "regularPrice": 45
+      },
+      {
+        "id": "dk-coca-cola-10",
+        "name": "Coca Cola Classic Cans 10 x 375mL",
+        "packSize": 10,
+        "packLabel": "10 cans",
+        "price": 23,
+        "url": "https://142.drakes.com.au/lines/coca-cola-classic-soft-drink-multipack-cans-10x375ml",
+        "priceUpdated": "2026-11-15"
+      }
+    ],
+    "coke-no-sugar": [
+      {
+        "id": "dk-coke-no-sugar-24",
+        "name": "Coca Cola Zero Sugar Cans 24 x 375mL",
+        "packSize": 24,
+        "packLabel": "24 cans",
+        "price": 27,
+        "url": "https://142.drakes.com.au/lines/coca-cola-no-sugar-cans-24x375ml",
+        "priceUpdated": "2026-11-15",
+        "regularPrice": 45
+      },
+      {
+        "id": "dk-coke-no-sugar-30",
+        "name": "Coca Cola Zero Sugar Cans 30 x 375mL",
+        "packSize": 30,
+        "packLabel": "30 cans",
+        "price": 32,
+        "url": "https://142.drakes.com.au/lines/coca-cola-no-sugar-multipack-cans-30x375ml",
+        "priceUpdated": "2026-11-15",
+        "regularPrice": 55
+      },
+      {
+        "id": "dk-coke-no-sugar-10",
+        "name": "Coca Cola Zero Sugar Cans 10 x 375mL",
+        "packSize": 10,
+        "packLabel": "10 cans",
+        "price": 23,
+        "url": "https://142.drakes.com.au/lines/coca-cola-no-sugar-multipack-cans-10x375ml",
+        "priceUpdated": "2026-11-15"
+      }
+    ],
+    "sprite": [
+      {
+        "id": "dk-sprite-24",
+        "name": "Sprite Cans 24 x 375mL",
+        "packSize": 24,
+        "packLabel": "24 cans",
+        "price": 23.5,
+        "url": "https://142.drakes.com.au/lines/sprite-lemonade-soft-drink-multipack-cans-24x375ml",
+        "priceUpdated": "2026-11-15",
+        "regularPrice": 45
+      },
+      {
+        "id": "dk-sprite-10",
+        "name": "Sprite Cans 10 x 375mL",
+        "packSize": 10,
+        "packLabel": "10 cans",
+        "price": 23,
+        "url": "https://142.drakes.com.au/lines/sprite-lemonade-soft-drink-multipack-cans-10x375ml",
+        "priceUpdated": "2026-11-15"
+      }
+    ],
+    "fanta": [
+      {
+        "id": "dk-fanta-24",
+        "name": "Fanta Orange Cans 24 x 375mL",
+        "packSize": 24,
+        "packLabel": "24 cans",
+        "price": 23.5,
+        "url": "https://142.drakes.com.au/lines/fanta-orange-cans-24x375ml",
+        "priceUpdated": "2026-11-15",
+        "regularPrice": 45
+      },
+      {
+        "id": "dk-fanta-10",
+        "name": "Fanta Orange Cans 10 x 375mL",
+        "packSize": 10,
+        "packLabel": "10 cans",
+        "price": 23,
+        "url": "https://142.drakes.com.au/lines/fanta-orange-cans-10x375ml",
+        "priceUpdated": "2026-11-15"
+      }
+    ]
+  }
+}

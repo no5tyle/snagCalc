@@ -1,4 +1,8 @@
-name: Update prices
+name: Update Drakes prices
+
+# Refreshes data/drakes.json from the Drakes online store every week.
+# Woolworths blocks GitHub's servers, so data/woolworths.json is updated from
+# the website instead (Recipe & prices -> Update Woolworths prices) and uploaded.
 
 on:
   schedule:
@@ -16,16 +20,17 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: node scripts/update-prices.mjs
+      - run: node scripts/update-prices.mjs --store drakes
       - run: npm test
       - name: Commit updated prices
         run: |
-          if git diff --quiet data/catalogue.json; then
+          if git diff --quiet data/drakes.json; then
             echo "No price changes."
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data/catalogue.json
-          git commit -m "Update supermarket prices"
+          git add data/drakes.json
+          git commit -m "Update Drakes prices"
+          git pull --rebase
           git push

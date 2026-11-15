@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Refresh product prices in data/catalogue.json from Woolworths and Drakes.
+// Refresh product prices in the store files (data/woolworths.json, data/drakes.json).
 //
 // For each product:
 //   - Woolworths products with a `stockcode` are looked up through the
@@ -14,12 +14,18 @@
 // refreshes Drakes. Run this from a home connection to refresh Woolworths.
 // On GitHub the results are also written to the run's summary page.
 //
-// Usage: node scripts/update-prices.mjs [--dry-run]
+// Usage: node scripts/update-prices.mjs [--store drakes|woolworths] [--dry-run]
+//
+// The weekly GitHub workflow runs it with `--store drakes` and commits
+// data/drakes.json. Woolworths prices are loaded from the website instead
+// (Recipe & prices → Update Woolworths prices), which exports data/woolworths.json.
 
-import { readFile, writeFile, appendFile } from 'node:fs/promises';
-import { recordPrice, daysSince, drakesSpecial } from './price-rules.mjs';
+import { appendFile } from 'node:fs/promises';
+import { recordPrice, daysSince, drakesSpecial } from '../assets/price-rules.js';
+import { parseWoolworthsProduct } from '../assets/woolworths.js';
+import { readBase, readStoreFile, writeStoreFile } from './catalogue-files.mjs';
 
-const FILE = new URL('../data/catalogue.json', import.meta.url);
+const ONLY_STORE = process.argv.includes('--store') ? process.argv[process.argv.indexOf('--store') + 1] : null;
 const DRY_RUN = process.argv.includes('--dry-run');
 const UA =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36';
@@ -51,13 +57,9 @@ async function woolworthsPrice(stockcode) {
     cookie,
   });
   if (!res.ok) throw new Error(`Woolworths API HTTP ${res.status}`);
-  const json = await res.json();
-  const product = json.Product ?? json;
-  const price = product.Price ?? product.InstorePrice;
-  if (!Number.isFinite(price)) throw new Error('no price in Woolworths response (possibly unavailable)');
-  const was = product.WasPrice;
-  const special = Number.isFinite(was) && was > price;
-  return { price, name: product.Name, special, ...(special ? { wasPrice: was } : {}) };
+  const found = parseWoolworthsProduct(await res.json());
+  if (!found) throw new Error('no price in Woolworths response (possibly unavailable)');
+  return found;
 }
 
 function findOfferPrice(node) {
@@ -133,35 +135,44 @@ async function lookup(product) {
 const money = (n) => (n == null ? '?' : `$${Number(n).toFixed(2)}`);
 
 async function main() {
-  const catalogue = JSON.parse(await readFile(FILE, 'utf8'));
+  const base = readBase();
+  const stores = Object.keys(base.stores).filter((s) => !ONLY_STORE || s === ONLY_STORE);
+  if (!stores.length) throw new Error(`Unknown store: ${ONLY_STORE}`);
   const changes = [];
   const specials = [];
   const failures = [];
   const stale = [];
   let checked = 0;
 
-  for (const ing of Object.values(catalogue.ingredients)) {
-    for (const product of ing.products) {
-      const store = catalogue.stores[product.store]?.name ?? product.store;
-      if (product.stockcode || product.url) {
-        try {
-          const found = await lookup(product);
-          if (found) {
-            checked++;
-            const { changed, special, from } = recordPrice(product, found, today);
-            if (changed) changes.push(`${product.id}: ${money(from)} -> ${money(product.price)}`);
-            if (special) specials.push(`${product.name} (${store}): ${money(product.price)}, usually ${money(product.regularPrice)}`);
+  for (const storeId of stores) {
+    const file = readStoreFile(storeId);
+    const store = base.stores[storeId].name;
+    let checkedHere = 0;
+    for (const products of Object.values(file.products)) {
+      for (const product of products) {
+        if (product.stockcode || product.url) {
+          try {
+            const found = await lookup({ ...product, store: storeId });
+            if (found) {
+              checkedHere++;
+              const { changed, special, from } = recordPrice(product, found, today);
+              if (changed) changes.push(`${product.id}: ${money(from)} -> ${money(product.price)}`);
+              if (special) specials.push(`${product.name} (${store}): ${money(product.price)}, usually ${money(product.regularPrice)}`);
+            }
+          } catch (err) {
+            failures.push(`${product.id} (${store}): ${err.message}`);
           }
-        } catch (err) {
-          failures.push(`${product.id} (${store}): ${err.message}`);
+          // Be polite between real requests
+          if (!(storeId === 'woolworths' && wooliesRefusals >= GIVE_UP_AFTER)) await new Promise((r) => setTimeout(r, 750));
         }
-        // Be polite between real requests
-        if (!(product.store === 'woolworths' && wooliesRefusals >= GIVE_UP_AFTER)) await new Promise((r) => setTimeout(r, 750));
+        const age = product.priceUpdated ? daysSince(product.priceUpdated, today) : null;
+        if (product.price == null) stale.push(`${product.name} (${store}): no price yet`);
+        else if (age == null) stale.push(`${product.name} (${store}): estimate, never checked`);
+        else if (age > STALE_DAYS) stale.push(`${product.name} (${store}): last checked ${product.priceUpdated}`);
       }
-      const age = product.priceUpdated ? daysSince(product.priceUpdated, today) : null;
-      if (age == null) stale.push(`${product.name} (${store}): estimate, never checked`);
-      else if (age > STALE_DAYS) stale.push(`${product.name} (${store}): last checked ${product.priceUpdated}`);
     }
+    checked += checkedHere;
+    if (!DRY_RUN && checkedHere > 0) writeStoreFile(storeId, file);
   }
 
   console.log(`Checked ${checked} product(s), ${changes.length} price change(s).`);
@@ -185,9 +196,6 @@ async function main() {
     if (stale.length) console.log(`::warning title=Price update::${stale.length} price(s) are estimates or over ${STALE_DAYS} days old. See the run summary.`);
   }
 
-  if (!DRY_RUN && checked > 0) {
-    await writeFile(FILE, JSON.stringify(catalogue, null, 2) + '\n');
-  }
 }
 
 main().catch((err) => {

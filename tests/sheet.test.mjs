@@ -1,10 +1,10 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { loadCatalogue } from '../scripts/catalogue-files.mjs';
 import { combineResults, calculate, calculateRestock, calculateItems } from '../assets/calc.js';
 import { buildSheet, toTSV } from '../assets/sheet.js';
 
-const catalogue = JSON.parse(readFileSync(new URL('../data/catalogue.json', import.meta.url)));
+const catalogue = loadCatalogue();
 const fullCatalogue = catalogue;
 
 // Minimal spreadsheet evaluator covering the functions the export uses.

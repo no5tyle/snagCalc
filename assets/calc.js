@@ -121,7 +121,8 @@ const donatedValueOf = (purchase) =>
  * Choose products for an ingredient given the store mode.
  * store: a store id, or 'cheapest' to pick the cheapest store per ingredient.
  */
-export function purchaseFor(needed, products, store, storeIds) {
+export function purchaseFor(needed, products, store, storeIds, ingredient = null) {
+  if (ingredient?.chooseBy === 'unitPrice') return bestValuePacks(needed, products, store, storeIds, ingredient);
   if (store !== 'cheapest') {
     return { store, ...cheapestPacks(needed, products.filter((p) => p.store === store)) };
   }
@@ -138,14 +139,45 @@ export function purchaseFor(needed, products, store, storeIds) {
   return best || { store: null, packs: [], units: 0, cost: needed > 0 ? null : 0, unavailable: needed > 0 };
 }
 
+const isGuess = (p) => !p.priceUpdated && !p.overridden && !p.donated && !p.custom;
+
+/**
+ * For an ingredient bought on unit price (`"chooseBy": "unitPrice"`): the
+ * best value product, and as many of it as it takes, even where a mix of
+ * sizes or a smaller pack would cost less today. With `store: 'cheapest'`
+ * the best value across every store wins. On a tie a checked price beats an
+ * estimate, then the smaller pack.
+ */
+function bestValuePacks(needed, products, store, storeIds, ingredient) {
+  const pool = (products || []).filter((p) => p && p.packSize > 0 && (store === 'cheapest' ? storeIds.includes(p.store) : p.store === store));
+  const none = { store: store === 'cheapest' ? null : store, packs: [], units: 0, cost: 0 };
+  const target = Math.ceil(needed - 1e-9);
+  if (!pool.length) return { ...none, cost: target > 0 ? null : 0, unavailable: target > 0 };
+  if (target <= 0) return none;
+  const priced = pool.filter((p) => Number.isFinite(p.price));
+  const rank = (p) => unitPrice(p, ingredient) ?? Infinity;
+  const best = (priced.length ? priced : pool).reduce((a, b) => {
+    const d = rank(b) - rank(a);
+    if (Math.abs(d) > 1e-9) return d < 0 ? b : a;
+    if (isGuess(a) !== isGuess(b)) return isGuess(a) ? b : a;
+    return b.packSize < a.packSize ? b : a;
+  });
+  const count = Math.ceil(target / best.packSize);
+  return {
+    store: best.store,
+    packs: [{ product: best, count }],
+    units: best.packSize * count,
+    cost: Number.isFinite(best.price) ? round2(best.price * count) : null,
+  };
+}
+
 const compareCost = (a, b) => {
   const d = (a ?? Infinity) - (b ?? Infinity);
   return Number.isNaN(d) || Math.abs(d) < 0.005 ? 0 : d;
 };
 
 /** How many of a purchase's products are priced on a placeholder estimate. */
-const guesses = (purchase) =>
-  purchase.packs.filter(({ product: p }) => !p.priceUpdated && !p.overridden && !p.donated && !p.custom).length;
+const guesses = (purchase) => purchase.packs.filter(({ product }) => isGuess(product)).length;
 
 /**
  * Main calculation.
@@ -184,7 +216,7 @@ export function calculate({
       const onHand = Math.max(0, Number(stock[r.ingredient]) || 0);
       const shortfall = roundQty(Math.max(0, needed - onHand));
       const products = pricedProducts(ingredient.products, priceOverrides, donated);
-      const purchase = purchaseFor(shortfall, products, store, storeIds);
+      const purchase = purchaseFor(shortfall, products, store, storeIds, ingredient);
       purchase.donatedValue = donatedValueOf(purchase);
       return { id: r.ingredient, ingredient, perServe: r.perServe, needed, onHand, shortfall, products, purchase };
     });
@@ -296,7 +328,7 @@ export function calculateItems({
       }
       const shortfall = roundQty(Math.max(0, needed - onHand));
       const products = pricedProducts(ingredient.products, priceOverrides, donated);
-      const purchase = purchaseFor(shortfall, products, store, storeIds);
+      const purchase = purchaseFor(shortfall, products, store, storeIds, ingredient);
       purchase.donatedValue = donatedValueOf(purchase);
       const salePrice = Math.max(0, Number(r.salePrice) || 0);
       return {
@@ -553,7 +585,7 @@ export function combineResults(parts, { catalogue, store = 'cheapest', stock = n
   const lines = [...byKey.values()].map(({ left, ...e }) => {
     const onHand = e.byEye ? left : stock ? Math.max(0, Number(stock[e.id]) || 0) : 0;
     const shortfall = roundQty(Math.max(0, e.needed - onHand));
-    const purchase = purchaseFor(shortfall, e.products, store, storeIds);
+    const purchase = purchaseFor(shortfall, e.products, store, storeIds, e.ingredient);
     purchase.donatedValue = donatedValueOf(purchase);
     return { ...e, onHand, shortfall, purchase };
   });
@@ -715,6 +747,8 @@ const PER_HUNDRED = new Set(['g', 'ml']);
  * @returns {{ size: number, label: string }}
  */
 export function unitBasis(ingredient) {
+  // Counted by the bottle but compared on what's inside (oil): per 100 ml of contents
+  if (ingredient.contentsUnit) return { size: 100, label: `100 ${ingredient.contentsUnit}`, byContents: true };
   const unit = String(ingredient.unit || 'item');
   if (PER_HUNDRED.has(unit.toLowerCase())) return { size: 100, label: `100 ${unit}` };
   return { size: 1, label: /[^s]s$/.test(unit) ? unit.slice(0, -1) : unit };
@@ -723,7 +757,9 @@ export function unitBasis(ingredient) {
 /** A product's price per unit (see unitBasis), or null if it has no price or pack size. */
 export function unitPrice(product, ingredient, price = product.price) {
   if (!Number.isFinite(price) || !(product.packSize > 0)) return null;
-  return (price / product.packSize) * unitBasis(ingredient).size;
+  const basis = unitBasis(ingredient);
+  if (basis.byContents) return product.contents > 0 ? (price / (product.packSize * product.contents)) * basis.size : null;
+  return (price / product.packSize) * basis.size;
 }
 
 /**
@@ -745,4 +781,25 @@ export function compareProducts(ingredient, products = ingredient.products) {
   const best = rows.find(sure)?.unitPrice;
   const priced = rows.filter((r) => r.unitPrice != null).length;
   return rows.map((r) => ({ ...r, cheapest: priced > 1 && sure(r) && Math.abs(r.unitPrice - best) < 1e-9 }));
+}
+
+/**
+ * Put the price list together from its files: the base file (ingredients,
+ * menus, stores) and one file of products per store. Each product gets its
+ * `store`, and each ingredient its `products`, in the order the base file
+ * lists the stores.
+ *
+ * A store file: { store, name, products: { [ingredientId]: [product, …] } }.
+ */
+export function assembleCatalogue(base, storeFiles = []) {
+  const byStore = new Map(storeFiles.filter(Boolean).map((f) => [f.store, f]));
+  const ingredients = {};
+  for (const [id, ing] of Object.entries(base.ingredients)) {
+    const products = [];
+    for (const store of Object.keys(base.stores)) {
+      for (const p of byStore.get(store)?.products?.[id] ?? []) products.push({ ...p, store });
+    }
+    ingredients[id] = { ...ing, products };
+  }
+  return { ...base, ingredients };
 }

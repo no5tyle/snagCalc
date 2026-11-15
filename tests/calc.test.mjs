@@ -1,9 +1,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
-import { unitPrice, unitBasis, compareProducts, purchaseFor, pricedProducts, stockLeft, carryForward, combineResults, byStore, stockShare, sumUsage, withCustomMenus, effectiveRecipe, cheapestPacks, calculate, calculateRestock, calculateItems, wizardProducts, applyWizardPrices, round2, withCustomItems, expectedDay2, recipeUsage, itemsUsage, leftoverEstimate } from '../assets/calc.js';
+import { loadCatalogue, storeIds, readStoreFile } from '../scripts/catalogue-files.mjs';
+import { assembleCatalogue, unitPrice, unitBasis, compareProducts, purchaseFor, pricedProducts, stockLeft, carryForward, combineResults, byStore, stockShare, sumUsage, withCustomMenus, effectiveRecipe, cheapestPacks, calculate, calculateRestock, calculateItems, wizardProducts, applyWizardPrices, round2, withCustomItems, expectedDay2, recipeUsage, itemsUsage, leftoverEstimate } from '../assets/calc.js';
 
-const catalogue = JSON.parse(readFileSync(new URL('../data/catalogue.json', import.meta.url)));
+const catalogue = loadCatalogue();
 // Listed prices change every week, so tests read them rather than hard-coding them
 const listed = (id) => Object.values(catalogue.ingredients).flatMap((i) => i.products).find((p) => p.id === id).price;
 
@@ -302,7 +302,76 @@ test('oil is a consumable: one bottle per event, not in the food recipes', () =>
   const oil = r.lines.find((l) => l.id === 'oil');
   assert.equal(oil.needed, 1); // the same however many are sold
   assert.equal(oil.purchase.packs[0].count, 1);
-  assert.equal(oil.purchase.cost, 4);
+});
+
+test('onions, oil, napkins, eggs and bacon are bought on unit price', () => {
+  for (const id of ['onions', 'oil', 'napkins', 'eggs', 'bacon']) {
+    const ing = catalogue.ingredients[id];
+    assert.equal(ing.chooseBy, 'unitPrice', id);
+    for (const store of ['cheapest', 'woolworths', 'drakes']) {
+      const pool = ing.products.filter((p) => Number.isFinite(p.price) && (store === 'cheapest' || p.store === store));
+      const best = Math.min(...pool.map((p) => unitPrice(p, ing)));
+      const r = purchaseFor(7, ing.products, store, ['woolworths', 'drakes'], ing);
+      assert.equal(r.packs.length, 1, `${id} at ${store}: one product`);
+      assert.ok(Math.abs(unitPrice(r.packs[0].product, ing) - best) < 1e-9, `${id} at ${store}: best value`);
+      assert.ok(r.units >= 7);
+      if (store !== 'cheapest') assert.equal(r.store, store);
+    }
+  }
+});
+
+test('bought on unit price: the best value pack even when a smaller one would cost less today', () => {
+  const ing = { unit: 'eggs', chooseBy: 'unitPrice' };
+  const products = [
+    { id: 'dozen', store: 'a', packSize: 12, price: 6, priceUpdated: '2026-11-15' },
+    { id: 'tray', store: 'b', packSize: 30, price: 12, priceUpdated: '2026-11-15' },
+  ];
+  // 13 eggs: two dozen is $12 either way, but 12 eggs needs only one dozen ($6) against a $12 tray
+  const r = purchaseFor(12, products, 'cheapest', ['a', 'b'], ing);
+  assert.deepEqual([r.store, r.packs[0].product.id, r.packs[0].count, r.cost, r.units], ['b', 'tray', 1, 12, 30]);
+  // Without the rule the cheapest way to cover it wins
+  assert.equal(purchaseFor(12, products, 'cheapest', ['a', 'b']).cost, 6);
+  // One store only: the best value there
+  assert.equal(purchaseFor(12, products, 'a', ['a', 'b'], ing).packs[0].product.id, 'dozen');
+  // A tie goes to the price someone has checked
+  const tie = [{ id: 'guess', store: 'a', packSize: 10, price: 5, priceUpdated: null }, { id: 'sure', store: 'b', packSize: 10, price: 5, priceUpdated: '2026-11-15' }];
+  assert.equal(purchaseFor(5, tie, 'cheapest', ['a', 'b'], ing).packs[0].product.id, 'sure');
+  assert.deepEqual(purchaseFor(0, products, 'cheapest', ['a', 'b'], ing).packs, []);
+  assert.equal(purchaseFor(5, [], 'cheapest', ['a', 'b'], ing).unavailable, true);
+});
+
+test('oil is counted by the bottle and compared on what is in it', () => {
+  const oil = catalogue.ingredients.oil;
+  assert.deepEqual(unitBasis(oil), { size: 100, label: '100 ml', byContents: true });
+  assert.equal(unitPrice({ packSize: 1, contents: 2000, price: 6 }, oil), 0.3);
+  assert.equal(unitPrice({ packSize: 1, price: 6 }, oil), null);
+  assert.ok(oil.products.every((p) => p.contents > 0));
+});
+
+test('assembleCatalogue attaches each store file\'s products in store order', () => {
+  const base = { stores: { a: { name: 'A' }, b: { name: 'B' } }, ingredients: { x: { name: 'X', unit: 'g' }, y: { name: 'Y', unit: 'g' } }, menu: {} };
+  const cat = assembleCatalogue(base, [{ store: 'b', products: { x: [{ id: 'bx' }] } }, { store: 'a', products: { x: [{ id: 'ax' }], y: [{ id: 'ay' }], gone: [{ id: 'z' }] } }, null]);
+  assert.deepEqual(cat.ingredients.x.products, [{ id: 'ax', store: 'a' }, { id: 'bx', store: 'b' }]);
+  assert.deepEqual(cat.ingredients.y.products, [{ id: 'ay', store: 'a' }]);
+  assert.ok(!('products' in base.ingredients.x), 'the base is untouched');
+  assert.deepEqual(assembleCatalogue(base, []).ingredients.x.products, []);
+});
+
+test('the store files only hold products for known ingredients, each with a unique id', () => {
+  const seen = new Set();
+  for (const store of storeIds()) {
+    const file = readStoreFile(store);
+    assert.equal(file.store, store);
+    for (const [ingredientId, products] of Object.entries(file.products)) {
+      assert.ok(catalogue.ingredients[ingredientId], `${store}: unknown ingredient ${ingredientId}`);
+      for (const p of products) {
+        assert.ok(!seen.has(p.id), `duplicate product id ${p.id}`);
+        seen.add(p.id);
+        assert.ok(!('store' in p), `${p.id}: the file says which store it is`);
+        assert.ok(p.packSize > 0, p.id);
+      }
+    }
+  }
 });
 
 test('bottles checked by eye: another is bought only if what is left will not last day 2', () => {

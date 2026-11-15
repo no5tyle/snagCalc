@@ -4,8 +4,8 @@
 // in time. That covers the shared stylesheet and app switcher from
 // no5tyle.github.io/shared too.
 
-const CACHE = 'snagcalc-v1';
-const SHELL = ['./', 'index.html', 'assets/app.js', 'assets/calc.js', 'assets/sheet.js', 'assets/share.js', 'assets/styles.css', 'data/catalogue.json', 'manifest.webmanifest'];
+const CACHE = 'snagcalc-v2';
+const SHELL = ['./', 'index.html', 'assets/app.js', 'assets/calc.js', 'assets/sheet.js', 'assets/share.js', 'assets/woolworths.js', 'assets/price-rules.js', 'assets/styles.css', 'data/catalogue.json', 'data/woolworths.json', 'data/drakes.json', 'manifest.webmanifest'];
 // How long to wait for the network before using the saved copy
 const TIMEOUT_MS = 3000;
 

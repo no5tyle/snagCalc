@@ -76,8 +76,10 @@
         <p class="hint" id="price-info"></p>
         <div class="actions price-actions">
           <button class="primary" data-open-wizard>Check prices step by step</button>
+          <button class="secondary" id="ww-update">Update Woolworths prices</button>
           <button class="secondary" id="copy-prices" hidden title="Copies the prices you've entered, to send to whoever keeps the shared price list">Copy my prices</button>
         </div>
+        <p class="hint ww-loaded" id="ww-loaded" hidden></p>
         <div class="table-scroll"><table id="price-table" class="data stack"></table></div>
       </div>
       <div class="card">
@@ -103,6 +105,9 @@
 
   <!-- Adding or renaming one of your own recipes (openRecipeDialog in app.js) -->
   <dialog id="recipe-dialog" class="sheet-dialog" aria-labelledby="recipe-dialog-title"></dialog>
+
+  <!-- Loading Woolworths prices through the Woolworths website, and what came back (app.js) -->
+  <dialog id="ww-dialog" class="sheet-dialog" aria-labelledby="ww-dialog-title"></dialog>
 
   <!-- "Are you sure?" in Snag Calc's own style (confirmAction in app.js), not the browser's confirm box -->
   <dialog id="confirm" class="confirm-dialog" aria-labelledby="confirm-title" aria-describedby="confirm-text">

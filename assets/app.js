@@ -20,6 +20,7 @@ import {
   applyWizardPrices,
   withCustomItems,
   withCustomMenus,
+  assembleCatalogue,
   combineResults,
   byStore,
   stockShare,
@@ -27,9 +28,24 @@ import {
 } from './calc.js';
 import { buildSheet, toTSV } from './sheet.js';
 import { planOf, encodePlan, decodePlan, planInHash } from './share.js';
+import {
+  parseWoolworthsProduct,
+  stockcodesOf,
+  collectorSource,
+  bookmarklet,
+  woolworthsUrl,
+  pricesInHash,
+  applyWoolworthsPrices,
+  pricePatch,
+  withPricePatch,
+  storeFileText,
+} from './woolworths.js';
 
 const STORAGE_KEY = 'snagcalc:v2';
 const OLD_STORAGE_KEY = 'snagcalc:v1';
+// Woolworths prices loaded in this browser, newer than the shared price list's
+const WW_PRICES_KEY = 'snagcalc:woolworths-prices';
+const WW = 'woolworths';
 const VIEWS = ['plan', 'restock', 'settings'];
 // The first tab: one shopping list across everything that's switched on
 const SHOP = 'all';
@@ -42,7 +58,9 @@ const num = (n, dp = 2) => Number(n.toFixed(dp)).toLocaleString('en-AU');
 const toNumber = (v) => (v === '' || v == null ? null : Number(v));
 const valueAttr = (v) => (Number.isFinite(v) ? v : '');
 
-let baseCatalogue; // data/catalogue.json as loaded
+let catalogueBase; // data/catalogue.json: ingredients, menus and the stores
+let storeFiles = {}; // each store's file of products as published, { [storeId]: file }
+let baseCatalogue; // the published price list put together, with Woolworths prices loaded here on top
 let catalogue; // baseCatalogue plus the user's own items (see rebuildCatalogue)
 let settings;
 
@@ -1465,7 +1483,9 @@ function renderPriceTable() {
     const compared = compareProducts(ing, pricedProducts(ing.products, settings.prices, settings.donated));
     const per = unitBasis(ing).label;
     if (compared.length > 1) {
-      rows += `<tr class="group"><th colspan="4" scope="colgroup">${esc(ing.name)}<span class="sub">${compared.length} to choose from, cheapest per ${esc(per)} first</span></th></tr>`;
+      rows += `<tr class="group"><th colspan="4" scope="colgroup">${esc(ing.name)}<span class="sub">${compared.length} to choose from, cheapest per ${esc(per)} first${
+        ing.chooseBy === 'unitPrice' ? '. The list buys the best value one' : ''
+      }</span></th></tr>`;
     }
     for (const { product: priced, unitPrice: each, usualUnitPrice, cheapest } of compared) {
       const p = ing.products.find((x) => x.id === priced.id);
@@ -1507,12 +1527,14 @@ function renderPriceTable() {
     ? `<thead><tr><th>Product</th><th>Store</th><th class="num">Listed price</th><th>Your price</th></tr></thead><tbody>${rows}</tbody>`
     : '';
   $('#price-info').textContent =
-    'Each item lists the pack sizes and brands on the shared price list, cheapest per unit first; the shopping list buys whichever mix costs least. ' +
+    'Each item lists the pack sizes and brands on the shared price list, cheapest per unit first. The shopping list buys whichever mix costs least, ' +
+    'except onions, oil, napkins, eggs and bacon, where it buys the best value per unit. ' +
     'Prices marked "estimate" haven\'t been checked against the store yet. ' +
     'Enter your own price to override one for this browser. Prices are shared across all tabs. ' +
     'Tick Donated for anything given to the group: it costs nothing on the shopping list, and its price counts as the value of the donation. ' +
     'For bread and bacon you can also set how many usable slices or rashers you get from a pack.';
   $('#copy-prices').hidden = !myPricesText();
+  renderWoolworthsStatus();
 }
 
 function renderMenuTabs() {
@@ -1659,6 +1681,194 @@ async function offerSharedPlan(plan) {
   save();
   closeWizard();
   init();
+}
+
+// ---------- Woolworths prices, loaded through the user's own browser ----------
+
+const wwSaved = () => readJSON(WW_PRICES_KEY);
+/** The Woolworths file in use: as published, with any prices loaded here on top. */
+const wwFile = () => withPricePatch(storeFiles[WW], wwSaved()?.patch);
+
+/** Put the price list together again (after loading Woolworths prices) and redraw. */
+function reassemble() {
+  baseCatalogue = assembleCatalogue(catalogueBase, Object.keys(catalogueBase.stores).map((id) => (id === WW ? wwFile() : storeFiles[id])));
+  rebuildCatalogue();
+}
+
+function downloadText(name, text) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
+  a.download = name;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+
+const wwFileName = () => (catalogueBase.stores[WW].file || 'woolworths.json').split('/').pop();
+const uploadUrl = () => (catalogueBase.repo ? `https://github.com/${catalogueBase.repo}/upload/main/data` : null);
+
+/** Under the price buttons: whether Woolworths prices were loaded here, with the export. */
+function renderWoolworthsStatus() {
+  const saved = wwSaved();
+  const n = Object.keys(saved?.patch ?? {}).length;
+  const el = $('#ww-loaded');
+  el.hidden = !n;
+  if (!n) return;
+  const url = uploadUrl();
+  el.innerHTML = `Woolworths prices loaded in this browser on ${esc(fmtDate(saved.date))} (${n} ${n === 1 ? 'price' : 'prices'}). To share them with everyone,
+    <button type="button" class="link" data-ww-export>download ${esc(wwFileName())}</button>${
+      url ? ` and <a href="${esc(url)}" target="_blank" rel="noopener">upload it to the data folder on GitHub</a>` : ''
+    }. <button type="button" class="link danger" data-ww-forget>Forget them</button>`;
+}
+
+/** Keep the prices just loaded, redraw, and say what changed. */
+function adoptWoolworthsPrices(result) {
+  const patch = pricePatch(storeFiles[WW], result.file);
+  try {
+    localStorage.setItem(WW_PRICES_KEY, JSON.stringify({ date: todayISO(), patch }));
+  } catch {
+    /* still used until the page is closed */
+  }
+  reassemble();
+  renderMenu();
+  showWoolworthsResult(result);
+}
+
+function showWoolworthsResult(result) {
+  const lines = (items, fn, max = 10) =>
+    `<ul class="changes">${items.slice(0, max).map(fn).join('')}${items.length > max ? `<li>and ${items.length - max} more</li>` : ''}</ul>`;
+  const url = uploadUrl();
+  const dlg = $('#ww-dialog');
+  dlg.innerHTML = `<form method="dialog">
+    <h2 id="ww-dialog-title">${result.loaded ? `${result.loaded} Woolworths ${result.loaded === 1 ? 'price' : 'prices'} loaded` : 'No Woolworths prices came back'}</h2>
+    ${
+      result.loaded
+        ? `<p class="hint">They’re in use in this browser now, marked as checked today.</p>`
+        : '<p class="notice">Woolworths didn’t give a price for anything. Try again from a Woolworths page that has finished loading.</p>'
+    }
+    ${
+      result.changes.length
+        ? `<p><strong>${result.changes.length} changed</strong></p>${lines(
+            result.changes,
+            (c) => `<li>${esc(c.name)}: ${c.wasGuess ? `estimate ${money(c.from)}` : money(c.from)} → <strong>${money(c.to)}</strong></li>`
+          )}`
+        : result.loaded
+          ? '<p>All of them match the price list.</p>'
+          : ''
+    }
+    ${
+      result.specials.length
+        ? `<p><strong>${result.specials.length} on special</strong></p>${lines(result.specials, (c) => `<li>${esc(c.name)}: ${money(c.price)}, usually ${money(c.regularPrice)}</li>`, 6)}`
+        : ''
+    }
+    ${
+      result.failures.length
+        ? `<p><strong>${result.failures.length} not loaded</strong> (old price kept)</p>${lines(result.failures, (c) => `<li>${esc(c.name)}: ${esc(c.reason)}</li>`, 6)}`
+        : ''
+    }
+    ${
+      result.loaded
+        ? `<p class="hint">To update the shared price list for everyone, download the file and upload it to the <strong>data</strong> folder of the repository, replacing the old one.</p>
+    <div class="actions">
+      <button type="button" class="primary" data-ww-export>Download ${esc(wwFileName())}</button>
+      ${url ? `<a class="button secondary" href="${esc(url)}" target="_blank" rel="noopener">Open the upload page</a>` : ''}
+    </div>`
+        : ''
+    }
+    <div class="confirm-actions single"><button class="secondary" value="close">Done</button></div>
+  </form>`;
+  if (!dlg.open) dlg.showModal();
+}
+
+/** Woolworths answers in the link that was opened (`#ww=…`), if any. Drops them from the address bar. */
+function takeWoolworthsPrices() {
+  const prices = pricesInHash(location.hash);
+  if (!prices) return;
+  history.replaceState(null, '', location.pathname + location.search);
+  adoptWoolworthsPrices(applyWoolworthsPrices(wwFile(), prices, todayISO()));
+  selectView('settings');
+}
+
+/**
+ * Asking Woolworths straight from this page. Browsers normally refuse to
+ * let another site read the answer, so this is expected to fail; when it
+ * does, the dialog explains the trip to the Woolworths site instead.
+ */
+async function loadWoolworthsDirectly(codes, onProgress) {
+  const prices = {};
+  for (const [i, code] of codes.entries()) {
+    const res = await fetch(`https://www.woolworths.com.au/apis/ui/product/detail/${encodeURIComponent(code)}`, {
+      headers: { accept: 'application/json' },
+      signal: AbortSignal.timeout(8000),
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const found = parseWoolworthsProduct(await res.json());
+    prices[code] = found ? { price: found.price, wasPrice: found.wasPrice ?? null, name: String(found.name ?? '') } : null;
+    onProgress(i + 1, codes.length);
+  }
+  return prices;
+}
+
+async function openWoolworthsDialog() {
+  const codes = stockcodesOf(storeFiles[WW]);
+  const back = location.origin + location.pathname;
+  const dlg = $('#ww-dialog');
+  dlg.innerHTML = `<form method="dialog">
+    <h2 id="ww-dialog-title">Update Woolworths prices</h2>
+    <p class="hint" data-ww-status>Asking Woolworths…</p>
+    <div data-ww-steps hidden>
+      <p>Woolworths only gives prices to its own website, so Snag Calc reads them there, in your browser. It takes about a minute and is easiest on a computer.</p>
+      <ol class="steps">
+        <li>Drag this to your bookmarks bar: <a class="button secondary bookmarklet" href="${esc(bookmarklet(codes, back))}" data-ww-bookmark>🌭 Snag Calc prices</a></li>
+        <li><a href="${esc(woolworthsUrl(codes))}" target="_blank" rel="noopener">Open the Woolworths website</a> and wait for it to load.</li>
+        <li>Click the bookmark there. It reads ${codes.length} prices and brings you back here with them.</li>
+      </ol>
+      <p class="hint">No bookmarks bar? <button type="button" class="link" data-ww-copy>Copy the script</button>, then on the Woolworths page open the console (F12, or Option+Command+J on a Mac), paste it and press Enter.</p>
+    </div>
+    <div class="confirm-actions single"><button class="secondary" value="close">Close</button></div>
+  </form>`;
+  if (!dlg.open) dlg.showModal();
+  const status = dlg.querySelector('[data-ww-status]');
+  try {
+    const prices = await loadWoolworthsDirectly(codes, (done, all) => (status.textContent = `Reading price ${done} of ${all}…`));
+    if (dlg.open) adoptWoolworthsPrices(applyWoolworthsPrices(wwFile(), prices, todayISO()));
+  } catch {
+    if (!dlg.querySelector('[data-ww-steps]')) return; // the dialog has moved on
+    status.hidden = true;
+    dlg.querySelector('[data-ww-steps]').hidden = false;
+  }
+}
+
+function bindWoolworths() {
+  $('#ww-update').addEventListener('click', openWoolworthsDialog);
+  document.addEventListener('click', async (e) => {
+    if (e.target.closest('[data-ww-export]')) downloadText(wwFileName(), storeFileText(wwFile()));
+    else if (e.target.closest('[data-ww-bookmark]')) {
+      // Clicked here rather than dragged: it only works on the Woolworths site
+      e.preventDefault();
+      await confirmAction({ title: 'Drag it, don’t click it', message: 'Drag the button up to your bookmarks bar, then click it once you’re on the Woolworths website.', confirmLabel: 'OK' });
+    } else if (e.target.closest('[data-ww-copy]')) {
+      const btn = e.target.closest('[data-ww-copy]');
+      const ok = await copyText(collectorSource(stockcodesOf(storeFiles[WW]), location.origin + location.pathname));
+      btn.textContent = ok ? 'Copied!' : "Couldn't copy";
+    } else if (e.target.closest('[data-ww-forget]')) {
+      const sure = await confirmAction({
+        title: 'Forget the Woolworths prices loaded here?',
+        message: 'This browser goes back to the shared price list. Download the file first if you still mean to upload it.',
+        confirmLabel: 'Forget them',
+        danger: true,
+      });
+      if (!sure) return;
+      localStorage.removeItem(WW_PRICES_KEY);
+      reassemble();
+      renderMenu();
+    }
+  });
+  $('#ww-dialog').addEventListener('click', (e) => {
+    if (e.target === e.currentTarget) e.currentTarget.close();
+  });
+  window.addEventListener('hashchange', takeWoolworthsPrices);
 }
 
 // ---------- Actions ----------
@@ -2284,6 +2494,7 @@ function init() {
   if (!bound) {
     bindInputs();
     bindWizard();
+    bindWoolworths();
     bound = true;
   }
   $('#store').value = settings.store;
@@ -2295,9 +2506,17 @@ function init() {
 
 async function start() {
   try {
-    const res = await fetch('data/catalogue.json', { cache: 'no-cache' });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    baseCatalogue = await res.json();
+    const get = async (file) => {
+      const res = await fetch(file, { cache: 'no-cache' });
+      if (!res.ok) throw new Error(`${file}: HTTP ${res.status}`);
+      return res.json();
+    };
+    // What's sold, then each store's products and prices
+    catalogueBase = await get('data/catalogue.json');
+    const ids = Object.keys(catalogueBase.stores);
+    const files = await Promise.all(ids.map((id) => get(catalogueBase.stores[id].file)));
+    storeFiles = Object.fromEntries(ids.map((id, i) => [id, files[i]]));
+    baseCatalogue = assembleCatalogue(catalogueBase, ids.map((id) => (id === WW ? wwFile() : storeFiles[id])));
     catalogue = baseCatalogue;
   } catch (err) {
     document.querySelector('main').innerHTML = `<div class="card notice">Couldn't load the price list (${esc(err.message)}).
@@ -2312,6 +2531,11 @@ async function start() {
   init();
   if (!(shared && fresh)) offerSharedPlan(shared);
   window.addEventListener('hashchange', async () => offerSharedPlan(await takeSharedPlan()));
+  // Back from the Woolworths website with prices
+  if (pricesInHash(location.hash)) {
+    closeWizard();
+    takeWoolworthsPrices();
+  }
   watchConnection();
 }
 

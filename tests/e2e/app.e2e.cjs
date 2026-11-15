@@ -65,7 +65,7 @@ const noSidewaysScroll = (page) => page.evaluate(() => document.documentElement.
 
 test('first visit: the price check opens, then the Shop tab lists both stores', async () => {
   const { context, page, errors } = await open(base, { skipWizard: false });
-  assert.ok(await page.isVisible('#wizard'));
+  await page.waitForSelector('#wizard[open]');
   assert.match(await text(page, '#wizard h2'), /Check your prices/);
   await page.click('#wizard [data-act=skip]');
   assert.match(await text(page, '#plan-results'), /First shop/);
@@ -211,8 +211,8 @@ test('prices: a special is flagged, and your own bread count changes the loaves'
   const { context, page, errors } = await open();
   // Whatever is on special this week is marked, with the usual price
   const specials = await page.evaluate(async () => {
-    const c = await (await fetch('data/catalogue.json')).json();
-    return Object.values(c.ingredients).flatMap((i) => i.products).filter((p) => p.regularPrice > p.price).length;
+    const files = await Promise.all(['data/woolworths.json', 'data/drakes.json'].map(async (f) => (await fetch(f)).json()));
+    return files.flatMap((f) => Object.values(f.products).flat()).filter((p) => p.regularPrice > p.price).length;
   });
   await page.click('#tab-settings');
   assert.equal(await page.locator('#price-table .badge-special').count() > 0, specials > 0);
@@ -244,6 +244,67 @@ test('pack sizes and brands are compared by unit price, on your own prices too',
   await page.selectOption('#store', 'woolworths');
   await page.click('#tab-plan');
   assert.match(await text(page, '#plan-results'), /Ozesauce Tomato Sauce 500mL/);
+  assert.ok(await noSidewaysScroll(page));
+  assert.deepEqual(errors, []);
+  await context.close();
+});
+
+test('Woolworths prices: collected on the Woolworths site, loaded here, and exported as the store file', async () => {
+  const published = JSON.parse(fs.readFileSync(path.join(ROOT, 'data', 'woolworths.json'), 'utf8'));
+  const byCode = new Map(Object.values(published.products).flat().filter((p) => p.stockcode).map((p) => [String(p.stockcode), p]));
+  const { context, page, errors } = await open();
+
+  // A stand-in for woolworths.com.au: a page, and the product API it only answers to itself (no CORS headers)
+  await context.route('https://www.woolworths.com.au/**', (route) => {
+    const url = new URL(route.request().url());
+    const code = /\/apis\/ui\/product\/detail\/(\d+)$/.exec(url.pathname)?.[1];
+    if (!code) return route.fulfill({ contentType: 'text/html', body: '<!doctype html><title>Woolworths</title><body>Woolworths</body>' });
+    // A real browser refuses to let another site's page read the answer; the test browser has to be told to
+    if (route.request().frame().url().startsWith(base)) return route.abort();
+    const product = byCode.get(code);
+    // Everything is $1.23 today, and the Pepsi 24 pack is on special from $30
+    const body = product ? { Product: { Name: product.name, Price: 1.23, WasPrice: product.id === 'ww-pepsi-24' ? 30 : 1.23 } } : { Product: null };
+    return route.fulfill({ contentType: 'application/json', body: JSON.stringify(body) });
+  });
+
+  await page.click('#tab-settings');
+  await page.click('#ww-update');
+  // Asking from this page is refused by the browser, so the steps for going via Woolworths appear
+  await page.waitForSelector('#ww-dialog [data-ww-steps]:not([hidden])');
+  assert.match(await text(page, '#ww-dialog'), new RegExp(`reads ${byCode.size} prices`));
+  const bookmark = await page.getAttribute('#ww-dialog [data-ww-bookmark]', 'href');
+  const woolworths = await page.getAttribute('#ww-dialog ol a[target=_blank]', 'href');
+  assert.match(bookmark, /^javascript:/);
+
+  // Step 2 and 3: on the Woolworths page, run the bookmark. It comes back here with the prices
+  await page.goto(woolworths);
+  await page.evaluate(decodeURIComponent(bookmark.slice('javascript:'.length)));
+  await page.waitForURL((u) => u.href.startsWith(base), { timeout: 30000 });
+  await page.waitForSelector('#ww-dialog[open]');
+  assert.match(await text(page, '#ww-dialog h2'), new RegExp(`${byCode.size} Woolworths prices loaded`));
+  assert.match(await text(page, '#ww-dialog'), /1 on special.*Pepsi 24 pack: \$1\.23, usually \$30\.00/);
+  assert.ok(!page.url().includes('#ww'), 'the prices are dropped from the address bar');
+
+  // The export is the store file with today's prices
+  const [download] = await Promise.all([page.waitForEvent('download'), page.click('#ww-dialog [data-ww-export]')]);
+  assert.equal(download.suggestedFilename(), 'woolworths.json');
+  const exported = JSON.parse(fs.readFileSync(await download.path(), 'utf8'));
+  const today = await page.evaluate(() => new Date().toLocaleDateString('en-CA'));
+  const pepsi = exported.products.pepsi.find((p) => p.id === 'ww-pepsi-24');
+  assert.deepEqual([pepsi.price, pepsi.regularPrice, pepsi.priceUpdated], [1.23, 30, today]);
+  assert.deepEqual(Object.keys(exported), Object.keys(published));
+  assert.equal(Object.values(exported.products).flat().length, Object.values(published.products).flat().length);
+  // Products with no stockcode keep what they had
+  const uncoded = Object.values(published.products).flat().find((p) => !p.stockcode);
+  assert.deepEqual(Object.values(exported.products).flat().find((p) => p.id === uncoded.id), uncoded);
+
+  // The prices are in use here, and still are after a reload, with the export on hand
+  await page.click('#ww-dialog button[value=close]');
+  await page.reload();
+  await page.waitForSelector('#ww-loaded:not([hidden])');
+  assert.match(await text(page, '#ww-loaded'), new RegExp(`${byCode.size} prices`));
+  await page.click('[data-menu=drinks]');
+  assert.match(await text(page, '#price-table'), /Pepsi 24 pack 24 cans Woolworths \$1\.23/);
   assert.ok(await noSidewaysScroll(page));
   assert.deepEqual(errors, []);
   await context.close();

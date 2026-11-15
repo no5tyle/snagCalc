@@ -17,6 +17,8 @@ The **Shop** tab is the whole order on one page. Switch on what you're selling (
 - **Works with no signal:** after the first visit the page, the price list and your plan are saved on the phone, so it opens with poor or no reception. It can be added to the home screen.
 
 - **Specials and prices to check:** an item on special is marked with its usual price, and the list says how much more it would cost at usual prices, for anyone shopping in a later week. Prices that are estimates, or were checked over a month ago, are flagged with a link to the price check.
+- **Bought on unit price:** onions, oil, napkins, eggs and bacon are bought as the best value product per unit (per 100 g, per egg, per 100 ml of oil…), across both stores or within the one you've chosen, even where a smaller pack would cost less on the day. Everything else is bought as the cheapest mix of packs that covers what's needed.
+- **Update Woolworths prices from the site:** under Recipe & prices. Woolworths only gives prices to its own website, so Snag Calc gives you a bookmark to run there; it reads every product that has a stockcode and brings you back with the prices, which are then in use in your browser. **Download woolworths.json** exports the updated file to upload to the repo's `data` folder so everyone gets them.
 - **Compare sizes and brands:** under Recipe & prices, each item lists every pack size and brand on the price list across both stores, cheapest per unit first (per can, per 100 ml…), with the usual unit price beside anything on special. The shopping list buys whichever mix costs least. Enter your own price and the order updates. "Cheapest" is only given to a price someone has checked, not to a placeholder estimate.
 - **Edit what you've added:** an ingredient, drink or item you added has an **Edit** link under Recipe & prices for its name, pack size, price and store. For bread and bacon you can set how many usable slices or rashers you get from a pack.
 
@@ -44,7 +46,7 @@ Snag Calc shares one look with [Beacon](https://no5tyle.github.io/Beacon/), the 
 
 ## Running locally
 
-The page loads `data/catalogue.json` with `fetch`, so it needs a web server. Opening `index.html` straight from disk won't work.
+The page loads the files in `data/` with `fetch`, so it needs a web server. Opening `index.html` straight from disk won't work.
 
 ```sh
 npm start          # python3 -m http.server 8000, then open http://localhost:8000
@@ -52,31 +54,37 @@ npm test           # unit tests for the calculator (Node 20+)
 npm run test:e2e   # the real page in a browser at phone width (needs `npm ci` and `npx playwright install chromium` first)
 ```
 
-## Prices and products (`data/catalogue.json`)
+## Prices and products (`data/`)
 
-Everything the calculator knows lives in one JSON file:
+The price list is three JSON files:
 
-- `ingredients`: each ingredient has a base `unit` (sausages, slices, g, ml…). Its `stockUnit` sets how leftover stock is counted (for example, bread is counted in loaves of 20 slices). Its `products` lists what each store sells.
-- Each product has a `store`, `packSize` (in the base unit), `packLabel`, `price` and `priceUpdated`. `regularPrice` is set while it's on special. `"packApprox": true` marks a pack whose count is a judgement (slices in a loaf), which people can change on the site.
+- `data/catalogue.json`: what's sold. `ingredients` (each with a base `unit`: sausages, slices, g, ml…; a `stockUnit` for counting leftovers, e.g. bread in loaves of 20 slices), `menu`, and `stores`, which names each store's file.
+- `data/woolworths.json` and `data/drakes.json`: each store's products and prices, as `products: { ingredientId: [product, …] }`. The Drakes file is refreshed by a GitHub Action every week; the Woolworths file is exported from the site (see below). Keeping them apart means the two never overwrite each other.
+- Each product has a `packSize` (in the base unit), `packLabel`, `price` and `priceUpdated`. `regularPrice` is set while it's on special. `"packApprox": true` marks a pack whose count is a judgement (slices in a loaf), which people can change on the site. A `price` of `null` means no price yet: it's never bought until someone enters one.
+- An ingredient with `"chooseBy": "unitPrice"` is bought as the best value product rather than the cheapest mix. `"contentsUnit": "ml"` (oil) means it's counted by the bottle but compared on each product's `contents`.
 - `menu`: one entry per tab. A normal menu item has a `recipe` with the quantity used per serve (`perServe`). A menu with `"kind": "items"` (drinks, consumables) instead lists a `quantity` for each item, plus a `salePrice` if `"sells": true`. An item with `perServe` instead of `quantity` is scaled from the food menus' serves; `servesFrom` limits which menus count (e.g. mustard: `["sausage-sizzle"]`).
 
 > ⚠️ **Every item has a Woolworths product and a Drakes product, so either store can supply the whole list. Drakes prices are read from the Drakes Aston Hills online store (last checked 2026-11-15) and refresh weekly. Woolworths prices were checked on 2026-11-07 against the group's shopping list, except sausages, eggs, bacon, gloves and the Coke-brand drinks, which are still placeholder estimates. So are the extra Woolworths pack sizes and sauce brands added for comparison (10 and 30 packs of drinks, 2L and 920mL sauces, Masterfoods, Rosella): their placeholders are based on the same product's Drakes price or an old listing. Ozesauce has no price until someone enters one.** Prices without a `priceUpdated` date show as "estimate" on the site. Update prices by hand, or add stockcodes and URLs so the updater can fetch them (see below).
 
 ### Keeping prices up to date
 
-`.github/workflows/update-prices.yml` runs `scripts/update-prices.mjs` every week (and on demand from the Actions tab). If any price changed, it commits the new catalogue. The run's summary page lists what changed, what's on special, lookups that failed, and prices worth checking by hand.
+- **Drakes: automatic.** `.github/workflows/update-prices.yml` runs `node scripts/update-prices.mjs --store drakes` every week (and on demand from the Actions tab) and commits `data/drakes.json` if anything changed. It reads each product's `url` for the price and the "save $x" sticker, so a special keeps the usual price as `regularPrice`. The run's summary page lists changes, specials, failed lookups and prices worth checking by hand.
+- **Woolworths: from the website.** Woolworths refuses GitHub's servers, and browsers won't let another site read its answers, so the prices are collected on woolworths.com.au itself:
+  1. On Snag Calc, go to **Recipe & prices → Update Woolworths prices**.
+  2. Drag the **Snag Calc prices** button to your bookmarks bar (once), open the Woolworths website from the link, and click the bookmark there. With no bookmarks bar, copy the script and paste it into the browser console on the Woolworths page instead.
+  3. It reads each product that has a `stockcode` and returns to Snag Calc, which shows what changed. Those prices are now used in that browser.
+  4. **Download woolworths.json**, then upload it to the `data` folder on GitHub (the dialog links to the upload page), replacing the old file. That updates the shared list for everyone.
 
-- **Drakes (or any store):** set `url` to the product page. The script reads the price from the page's structured data, and for Drakes the "save $x" sticker, so a special keeps the usual price as `regularPrice`.
-- **Woolworths:** set `stockcode` on a product. It's the number in the product URL, e.g. `woolworths.com.au/shop/productdetails/`**`123456`**`/...`. **Woolworths blocks requests from GitHub's servers, so the weekly run does not refresh Woolworths prices.** Run `npm run update-prices` from a home connection to refresh the products that have a stockcode, then commit the result.
-- **By hand:** `npm run set-prices -- ww-eggs-12=6.20 ww-bacon-1kg=13` records prices someone checked in store and marks them checked today. On the site, **Copy my prices** (under Recipe & prices, once you've entered a price) copies your prices in that form to send to whoever keeps the list; the text can be piped in as it is: `npm run set-prices < prices.txt`.
+  A product only loads if it has a `stockcode`: the number in its Woolworths URL, e.g. `woolworths.com.au/shop/productdetails/`**`123456`**`/...`. `npm run update-prices -- --store woolworths` does the same from a home computer.
+- **By hand:** `npm run set-prices -- ww-eggs-12=6.20 ww-bacon-1kg=13` records prices someone checked in store and marks them checked today. On the site, **Copy my prices** copies the prices you've entered in that form; the text can be piped in as it is: `npm run set-prices < prices.txt`.
 
-A looked-up product whose name doesn't resemble the catalogue's is refused, so a wrong stockcode can't write a wrong price. Products with no stockcode or url are skipped. A failed lookup keeps the old price. Drakes prices also vary between stores, which is why each person can override prices on the site.
+A looked-up product whose name doesn't resemble the price list's is refused, so a wrong stockcode can't write a wrong price. A failed lookup keeps the old price. Drakes prices also vary between stores, which is why each person can override prices on the site.
 
 ## Adding more menu items
 
 Each entry under `menu` becomes a tab, so a new item is just JSON:
 
-1. Add any new ingredients (rolls, cheese…) with their products under `ingredients`.
+1. Add any new ingredients (rolls, cheese…) under `ingredients` in `data/catalogue.json`, and their products to the store files.
 2. Add a new entry under `menu` with a `name`, `icon`, `tabLabel`, `serveLabel` (e.g. "rolls"), `serveNoun` ("roll"), `defaultServes`, `defaultSalePrice` and its `recipe`.
 
 That adds it for everyone. One person can add a recipe just for their own browser with **Add your own recipe** on the Shop tab.
@@ -85,17 +93,21 @@ That adds it for everyone. One person can add a recipe just for their own browse
 
 ```
 index.html                 page
-assets/calc.js             pure calculation logic (pack optimisation, plan, restock, combined list)
+assets/calc.js             pure calculation logic (pack optimisation, plan, restock, combined list, unit prices)
 assets/sheet.js            spreadsheet export (tab-separated rows with formulas)
 assets/share.js            a plan as a link, and back (checked on the way in)
+assets/woolworths.js       collecting Woolworths prices through the user's browser, and applying them
+assets/price-rules.js      what to do with a looked-up price (specials, wrong-product check)
 assets/app.js              UI
+assets/styles.css          styles (light/dark, mobile, print)
+data/catalogue.json        ingredients, menus and stores
+data/woolworths.json       Woolworths products and prices (exported from the site)
+data/drakes.json           Drakes products and prices (refreshed weekly by a GitHub Action)
 sw.js                      service worker: keeps the page working with no signal
 manifest.webmanifest       name and icons for adding it to a home screen
-assets/styles.css          styles (light/dark, mobile, print)
-data/catalogue.json        products, prices, recipes
 scripts/update-prices.mjs  price updater used by the scheduled workflow
-scripts/price-rules.mjs    what the updater does with a looked-up price (specials, wrong-product check)
 scripts/set-prices.mjs     record prices checked by hand
+scripts/catalogue-files.mjs  reads and writes the data files for scripts and tests
 tests/                     node:test unit tests
 tests/e2e/                 browser tests (Playwright)
 ```

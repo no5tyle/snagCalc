@@ -1,0 +1,566 @@
+{
+  "store": "woolworths",
+  "name": "Woolworths",
+  "products": {
+    "sausages": [
+      {
+        "id": "ww-sausages-24",
+        "name": "BBQ beef sausages 24 pack 1.8kg",
+        "packSize": 24,
+        "packLabel": "1.8kg (24 sausages)",
+        "price": 12,
+        "stockcode": null,
+        "url": null,
+        "priceUpdated": null
+      }
+    ],
+    "bread": [
+      {
+        "id": "ww-bread-white",
+        "name": "Woolworths White Soft Sandwich Bread 650g",
+        "packSize": 20,
+        "packLabel": "loaf (~20 usable slices)",
+        "price": 2.8,
+        "stockcode": "581172",
+        "url": null,
+        "priceUpdated": "2026-11-07",
+        "packApprox": true
+      }
+    ],
+    "onions": [
+      {
+        "id": "ww-onions-2kg",
+        "name": "Brown onions 2kg bag",
+        "packSize": 2000,
+        "packLabel": "2kg bag",
+        "price": 5.5,
+        "stockcode": "144427",
+        "url": null,
+        "priceUpdated": "2026-11-07"
+      },
+      {
+        "id": "ww-onions-1kg",
+        "name": "Woolworths Onion Brown Bag 1kg",
+        "packSize": 1000,
+        "packLabel": "1kg bag",
+        "price": 4,
+        "stockcode": "144336",
+        "url": null,
+        "priceUpdated": null
+      }
+    ],
+    "tomato-sauce": [
+      {
+        "id": "ww-fountain-tomato-500",
+        "name": "Fountain Tomato Sauce 500ml",
+        "packSize": 500,
+        "packLabel": "500ml squeeze bottle",
+        "price": 2.2,
+        "stockcode": "306969",
+        "url": null,
+        "priceUpdated": "2026-11-07"
+      },
+      {
+        "id": "ww-fountain-tomato-2l",
+        "name": "Fountain Tomato Sauce Value Pack 2L",
+        "packSize": 2000,
+        "packLabel": "2L bottle",
+        "price": 6,
+        "stockcode": "175901",
+        "url": null,
+        "priceUpdated": null
+      },
+      {
+        "id": "ww-masterfoods-tomato-500",
+        "name": "MasterFoods Tomato Sauce 500mL",
+        "packSize": 500,
+        "packLabel": "500ml squeeze bottle",
+        "price": 3.5,
+        "stockcode": "99633",
+        "url": null,
+        "priceUpdated": null
+      },
+      {
+        "id": "ww-masterfoods-tomato-920",
+        "name": "MasterFoods Tomato Sauce 920mL",
+        "packSize": 920,
+        "packLabel": "920ml squeeze bottle",
+        "price": 5.4,
+        "stockcode": "258672",
+        "url": null,
+        "priceUpdated": null
+      },
+      {
+        "id": "ww-masterfoods-tomato-2l",
+        "name": "MasterFoods Tomato Sauce 2L",
+        "packSize": 2000,
+        "packLabel": "2L bottle",
+        "price": 8.5,
+        "stockcode": "608987",
+        "url": null,
+        "priceUpdated": null
+      },
+      {
+        "id": "ww-rosella-tomato-500",
+        "name": "Rosella Tomato Sauce Squeezie 500mL",
+        "packSize": 500,
+        "packLabel": "500ml squeeze bottle",
+        "price": 3.25,
+        "stockcode": "207915",
+        "url": null,
+        "priceUpdated": null
+      },
+      {
+        "id": "ww-ozesauce-tomato-500",
+        "name": "Ozesauce Tomato Sauce 500mL",
+        "packSize": 500,
+        "packLabel": "500ml bottle",
+        "price": null,
+        "stockcode": "742407",
+        "url": null,
+        "priceUpdated": null
+      }
+    ],
+    "bbq-sauce": [
+      {
+        "id": "ww-fountain-bbq-500",
+        "name": "Fountain BBQ Sauce 500ml",
+        "packSize": 500,
+        "packLabel": "500ml squeeze bottle",
+        "price": 2.2,
+        "stockcode": "306971",
+        "url": null,
+        "priceUpdated": "2026-11-07"
+      },
+      {
+        "id": "ww-fountain-bbq-2l",
+        "name": "Fountain Barbecue BBQ Sauce Value Pack 2L",
+        "packSize": 2000,
+        "packLabel": "2L bottle",
+        "price": 6,
+        "stockcode": "845672",
+        "url": null,
+        "priceUpdated": null
+      },
+      {
+        "id": "ww-masterfoods-bbq-500",
+        "name": "MasterFoods Barbecue Sauce 500mL",
+        "packSize": 500,
+        "packLabel": "500ml squeeze bottle",
+        "price": 3.5,
+        "stockcode": "99696",
+        "url": null,
+        "priceUpdated": null
+      },
+      {
+        "id": "ww-masterfoods-bbq-920",
+        "name": "MasterFoods Barbecue Sauce 920mL",
+        "packSize": 920,
+        "packLabel": "920ml squeeze bottle",
+        "price": 5.4,
+        "stockcode": "258673",
+        "url": null,
+        "priceUpdated": null
+      },
+      {
+        "id": "ww-masterfoods-bbq-2l",
+        "name": "MasterFoods Barbeque Sauce 2L",
+        "packSize": 2000,
+        "packLabel": "2L bottle",
+        "price": 8.5,
+        "stockcode": "609023",
+        "url": null,
+        "priceUpdated": null
+      }
+    ],
+    "mustard": [
+      {
+        "id": "ww-masterfoods-mustard-550",
+        "name": "Masterfoods Mild American Mustard 550g",
+        "packSize": 550,
+        "packLabel": "550g squeeze bottle",
+        "price": 4.8,
+        "stockcode": "141604",
+        "url": null,
+        "priceUpdated": "2026-11-07"
+      },
+      {
+        "id": "ww-masterfoods-mustard-250",
+        "name": "MasterFoods Mild American Mustard 250g",
+        "packSize": 250,
+        "packLabel": "250g squeeze bottle",
+        "price": 3.5,
+        "stockcode": "36557",
+        "url": null,
+        "priceUpdated": null
+      }
+    ],
+    "oil": [
+      {
+        "id": "ww-sunflower-oil-750",
+        "name": "Oil 750ml",
+        "packSize": 1,
+        "packLabel": "750ml bottle",
+        "price": 4,
+        "stockcode": null,
+        "url": null,
+        "priceUpdated": "2026-11-07",
+        "contents": 750
+      },
+      {
+        "id": "ww-canola-oil-750",
+        "name": "Woolworths Canola Oil 750mL",
+        "packSize": 1,
+        "packLabel": "750ml bottle",
+        "price": 4,
+        "stockcode": "750736",
+        "url": null,
+        "priceUpdated": null,
+        "contents": 750
+      },
+      {
+        "id": "ww-canola-oil-2l",
+        "name": "Woolworths Canola Oil 2L",
+        "packSize": 1,
+        "packLabel": "2L bottle",
+        "price": 6,
+        "stockcode": "750739",
+        "url": null,
+        "priceUpdated": null,
+        "contents": 2000
+      },
+      {
+        "id": "ww-canola-oil-4l",
+        "name": "Woolworths Australian Canola Oil 4L",
+        "packSize": 1,
+        "packLabel": "4L bottle",
+        "price": 11.9,
+        "stockcode": "62062",
+        "url": null,
+        "priceUpdated": null,
+        "contents": 4000
+      }
+    ],
+    "napkins": [
+      {
+        "id": "ww-napkins-100",
+        "name": "Napkins 100 pack",
+        "packSize": 100,
+        "packLabel": "100 pack",
+        "price": 0.95,
+        "stockcode": "94672",
+        "url": null,
+        "priceUpdated": "2026-11-07"
+      },
+      {
+        "id": "ww-napkins-500",
+        "name": "Essentials Serviettes White 1 Ply 500 Pack",
+        "packSize": 500,
+        "packLabel": "500 pack",
+        "price": null,
+        "stockcode": "757230",
+        "url": null,
+        "priceUpdated": null
+      }
+    ],
+    "gloves": [
+      {
+        "id": "ww-gloves-100",
+        "name": "Disposable gloves 100 pack",
+        "packSize": 100,
+        "packLabel": "100 pack",
+        "price": 6,
+        "stockcode": null,
+        "url": null,
+        "priceUpdated": null
+      }
+    ],
+    "eggs": [
+      {
+        "id": "ww-eggs-12",
+        "name": "Cage-free eggs 12 pack 700g",
+        "packSize": 12,
+        "packLabel": "dozen",
+        "price": 6.5,
+        "stockcode": "165367",
+        "url": null,
+        "priceUpdated": null
+      }
+    ],
+    "bacon": [
+      {
+        "id": "ww-bacon-1kg",
+        "name": "Middle bacon rashers 1kg",
+        "packSize": 20,
+        "packLabel": "1kg (~20 rashers)",
+        "price": 14,
+        "stockcode": "48358",
+        "url": null,
+        "priceUpdated": null,
+        "packApprox": true
+      }
+    ],
+    "paper-towels": [
+      {
+        "id": "ww-paper-towels-3",
+        "name": "Paper towels 3 pack",
+        "packSize": 3,
+        "packLabel": "3 rolls",
+        "price": 2.5,
+        "stockcode": null,
+        "url": null,
+        "priceUpdated": "2026-11-07"
+      }
+    ],
+    "garbage-bags": [
+      {
+        "id": "ww-garbage-bags-56l-20",
+        "name": "Garbage bags 56L 20 pack",
+        "packSize": 20,
+        "packLabel": "20 bags",
+        "price": 3.8,
+        "stockcode": null,
+        "url": null,
+        "priceUpdated": "2026-11-07"
+      }
+    ],
+    "dish-liquid": [
+      {
+        "id": "ww-dish-liquid",
+        "name": "Dishwashing liquid",
+        "packSize": 1,
+        "packLabel": "bottle",
+        "price": 3,
+        "stockcode": null,
+        "url": null,
+        "priceUpdated": "2026-11-07"
+      }
+    ],
+    "pepsi": [
+      {
+        "id": "ww-pepsi-24",
+        "name": "Pepsi 24 pack",
+        "packSize": 24,
+        "packLabel": "24 cans",
+        "price": 23,
+        "stockcode": "14310",
+        "url": null,
+        "priceUpdated": "2026-11-07"
+      },
+      {
+        "id": "ww-pepsi-30",
+        "name": "Pepsi Cola Cans 375mL x 30 pack",
+        "packSize": 30,
+        "packLabel": "30 cans",
+        "price": 29.5,
+        "stockcode": "773147",
+        "url": null,
+        "priceUpdated": null
+      },
+      {
+        "id": "ww-pepsi-10",
+        "name": "Pepsi Cola Cans 375mL x 10 pack",
+        "packSize": 10,
+        "packLabel": "10 cans",
+        "price": 20,
+        "stockcode": "442182",
+        "url": null,
+        "priceUpdated": null
+      }
+    ],
+    "pepsi-max": [
+      {
+        "id": "ww-pepsi-max-24",
+        "name": "Pepsi Max 24 pack",
+        "packSize": 24,
+        "packLabel": "24 cans",
+        "price": 23,
+        "stockcode": "54291",
+        "url": null,
+        "priceUpdated": "2026-11-07"
+      },
+      {
+        "id": "ww-pepsi-max-30",
+        "name": "Pepsi Max Cans 375mL x 30 pack",
+        "packSize": 30,
+        "packLabel": "30 cans",
+        "price": 29.5,
+        "stockcode": "773129",
+        "url": null,
+        "priceUpdated": null
+      },
+      {
+        "id": "ww-pepsi-max-10",
+        "name": "Pepsi Max Cans 375mL x 10 pack",
+        "packSize": 10,
+        "packLabel": "10 cans",
+        "price": 20,
+        "stockcode": "442190",
+        "url": null,
+        "priceUpdated": null
+      }
+    ],
+    "solo": [
+      {
+        "id": "ww-solo-30",
+        "name": "Solo 30 pack",
+        "packSize": 30,
+        "packLabel": "30 cans",
+        "price": 26,
+        "stockcode": "773142",
+        "url": null,
+        "priceUpdated": "2026-11-07"
+      },
+      {
+        "id": "ww-solo-24",
+        "name": "Solo Original Lemon Cans 375mL x 24 pack",
+        "packSize": 24,
+        "packLabel": "24 cans",
+        "price": 39.5,
+        "stockcode": "162763",
+        "url": null,
+        "priceUpdated": null
+      },
+      {
+        "id": "ww-solo-10",
+        "name": "Solo Original Lemon Cans 375mL x 10 pack",
+        "packSize": 10,
+        "packLabel": "10 cans",
+        "price": 20,
+        "stockcode": "442191",
+        "url": null,
+        "priceUpdated": null
+      }
+    ],
+    "water": [
+      {
+        "id": "ww-water-24",
+        "name": "Water 24 pack",
+        "packSize": 24,
+        "packLabel": "24 bottles",
+        "price": 9.4,
+        "stockcode": "116784",
+        "url": null,
+        "priceUpdated": "2026-11-07"
+      }
+    ],
+    "coca-cola": [
+      {
+        "id": "ww-coca-cola-24",
+        "name": "Coca-Cola 24 pack",
+        "packSize": 24,
+        "packLabel": "24 cans",
+        "price": 30,
+        "stockcode": "42605",
+        "url": null,
+        "priceUpdated": null
+      },
+      {
+        "id": "ww-coca-cola-30",
+        "name": "Coca-Cola Classic Cans 375mL x 30 pack",
+        "packSize": 30,
+        "packLabel": "30 cans",
+        "price": 32,
+        "stockcode": "84552",
+        "url": null,
+        "priceUpdated": null
+      },
+      {
+        "id": "ww-coca-cola-10",
+        "name": "Coca-Cola Classic Cans 375mL x 10 pack",
+        "packSize": 10,
+        "packLabel": "10 cans",
+        "price": 21,
+        "stockcode": "793315",
+        "url": null,
+        "priceUpdated": null
+      }
+    ],
+    "coke-no-sugar": [
+      {
+        "id": "ww-coke-no-sugar-24",
+        "name": "Coke No Sugar 24 pack",
+        "packSize": 24,
+        "packLabel": "24 cans",
+        "price": 30,
+        "stockcode": "669683",
+        "url": null,
+        "priceUpdated": null
+      },
+      {
+        "id": "ww-coke-no-sugar-30",
+        "name": "Coca-Cola Zero Sugar Cans 375mL x 30 pack",
+        "packSize": 30,
+        "packLabel": "30 cans",
+        "price": 32,
+        "stockcode": "679121",
+        "url": null,
+        "priceUpdated": null
+      },
+      {
+        "id": "ww-coke-no-sugar-10",
+        "name": "Coca-Cola Zero Sugar Cans 375mL x 10 pack",
+        "packSize": 10,
+        "packLabel": "10 cans",
+        "price": 21,
+        "stockcode": "669379",
+        "url": null,
+        "priceUpdated": null
+      }
+    ],
+    "sprite": [
+      {
+        "id": "ww-sprite-24",
+        "name": "Sprite 24 pack",
+        "packSize": 24,
+        "packLabel": "24 cans",
+        "price": 30,
+        "stockcode": "370739",
+        "url": null,
+        "priceUpdated": null
+      },
+      {
+        "id": "ww-sprite-30",
+        "name": "Sprite Lemonade Cans 375mL x 30 pack",
+        "packSize": 30,
+        "packLabel": "30 cans",
+        "price": 32,
+        "stockcode": "406937",
+        "url": null,
+        "priceUpdated": null
+      },
+      {
+        "id": "ww-sprite-10",
+        "name": "Sprite Lemonade Cans 375mL x 10 pack",
+        "packSize": 10,
+        "packLabel": "10 cans",
+        "price": 21,
+        "stockcode": "793285",
+        "url": null,
+        "priceUpdated": null
+      }
+    ],
+    "fanta": [
+      {
+        "id": "ww-fanta-24",
+        "name": "Fanta 24 pack",
+        "packSize": 24,
+        "packLabel": "24 cans",
+        "price": 30,
+        "stockcode": "370743",
+        "url": null,
+        "priceUpdated": null
+      },
+      {
+        "id": "ww-fanta-10",
+        "name": "Fanta Orange Cans 375mL x 10 pack",
+        "packSize": 10,
+        "packLabel": "10 cans",
+        "price": 21,
+        "stockcode": "793311",
+        "url": null,
+        "priceUpdated": null
+      }
+    ]
+  }
+}

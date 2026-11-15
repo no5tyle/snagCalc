@@ -1,11 +1,11 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
-import { namesMatch, recordPrice, drakesSpecial, daysSince } from '../scripts/price-rules.mjs';
+import { loadCatalogue } from '../scripts/catalogue-files.mjs';
+import { namesMatch, recordPrice, drakesSpecial, daysSince } from '../assets/price-rules.js';
 import { parsePrices } from '../scripts/set-prices.mjs';
 import { calculate, combineResults, withPackSizes, priceStatus, priceNotes, onSpecial, pricedProducts } from '../assets/calc.js';
 
-const catalogue = JSON.parse(readFileSync(new URL('../data/catalogue.json', import.meta.url)));
+const catalogue = loadCatalogue();
 
 test('namesMatch accepts the same product under a longer name and refuses another product', () => {
   assert.ok(namesMatch('Pepsi 24 pack', 'Pepsi Cola Soft Drink Cans Multipack 375mL x 24 pack'));
